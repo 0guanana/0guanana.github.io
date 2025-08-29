@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GODORB THE MISSING SUN</title>
+  <style>
+    /* Cosmic Checkerboard with glitch effect */
+    body {
+      background: 
+        repeating-conic-gradient(#000 0% 25%, #111 0% 50%) 
+        0% 0% / 40px 40px;
+      color: #0f0;
+      font-family: 'Courier New', monospace;
+      margin: 0;
+      overflow: hidden;
+      height: 100vh;
+      animation: glitch-bg 10s infinite linear;
+      position: relative;
+    }
+    
+    /* Copyright notice for main pages */
+    .copyright {
+      position: fixed;
+      bottom: 10px;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      font-size: 0.7em;
+      color: #0f0;
+      opacity: 0.7;
+      z-index: 100;
+    }
+    
+    /* Game Container */
+    #gameContainer {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+    
+    /* GodOrb Interface */
+    .godorb-interface {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      padding: 1em;
+      box-sizing: border-box;
+      transition: filter 1.5s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    /* Larger Cards with holographic effect */
+    .card {
+      display: inline-block;
+      width: 250px;
+      height: 350px;
+      margin: 15px;
+      perspective: 1000px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.3s;
+    }
+    .card:hover {
+      transform: translateY(-5px) scale(1.02);
+    }
+    .card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transition: transform 1s;
+      transform-style: preserve-3d;
+    }
+    .card.flipped .card-inner {
+      transform: rotateY(180deg);
+    }
+    .card-face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      border-radius: 15px;
+      padding: 1.5em;
+      box-sizing: border-box;
+    }
+    .card-front {
+      background: linear-gradient(135deg, #c0c0c0 0%, #a0a0a0 20%, #808080 40%, #606060 60%, #404040 80%, #202020 100%);
+      border: 3px solid #fff;
+      box-shadow: 
+        0 0 25px rgba(255,255,255,0.5),
+        0 0 40px rgba(255,255,255,0.2);
+    }
+    .card-front div:first-child {
+      font-size: 5em !important;
+      margin-bottom: 15px;
+    }
+    .card-front div:nth-child(2) {
+      font-size: 1.2em;
+      margin-top: 10px;
+      color: #333;
+    }
+    .card-back {
+      background: linear-gradient(
+        135deg,
+        #ffd700 0%,
+        #ffcc00 20%,
+        #ff9900 40%,
+        #ff6600 60%,
+        #ff3300 80%,
+        #ff0000 100%
+      );
+      border: 3px solid #f80;
+      transform: rotateY(180deg);
+      box-shadow: 
+        0 0 25px rgba(255,215,0,0.7),
+        0 0 40px rgba(255,165,0,0.5);
+    }
+    .card-back div:first-child {
+      font-size: 3em !important;
+      margin-bottom: 15px;
+    }
+    .card-back div:nth-child(2) {
+      font-size: 1.3em;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .card-back div:nth-child(3) {
+      font-size: 0.9em;
+      line-height: 1.4;
+    }
+    .card-back div:nth-child(4) {
+      position: absolute;
+      bottom: 15px;
+      font-size: 0.8em;
+      opacity: 0.7;
+    }
+
+    /* Deck container */
+    #deck {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+      width: 90%;
+      max-width: 1200px;
+      margin: 20px auto;
+    }
+
+    /* Wormhole Transition */
+    .wormhole {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #0f0 0%, rgba(0,255,0,0) 70%);
+      transform: translate(-50%, -50%);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 100;
+    }
+    
+    /* Shadow Gate */
+    .shadow-gate {
+      position: absolute;
+      top: 0;
+      left: 100%;
+      width: 100%;
+      height: 100%;
+      padding: 2em;
+      box-sizing: border-box;
+      background: 
+        repeating-conic-gradient(#000 0% 25%, #111 0% 50%) 
+        0% 0% / 40px 40px;
+      border-left: 1px solid #f00;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-y: auto;
+    }
+    
+    /* Message display in shadow gate */
+    .message-log {
+      width: 80%;
+      height: 300px;
+      background: #000;
+      border: 1px solid #f00;
+      color: #0f0;
+      padding: 10px;
+      margin-bottom: 20px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9em;
+      position: relative;
+    }
+    .message-log::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(
+        rgba(0,255,0,0.1) 0%,
+        rgba(0,255,0,0) 10%,
+        rgba(0,255,0,0) 90%,
+        rgba(0,255,0,0.1) 100%
+      );
+      pointer-events: none;
+    }
+
+    /* Updated Audio Easter Egg Styles */
+    .audio-easter-egg {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 300px;
+      background: rgba(0,0,0,0.9);
+      border: 1px solid #f00;
+      padding: 10px;
+      display: none;
+      flex-direction: column;
+      z-index: 1000;
+      box-shadow: 0 0 20px rgba(255,0,0,0.3);
+      font-family: 'Courier New', monospace;
+      overflow: hidden;
+    }
+    
+    .audio-easter-egg.show {
+      display: flex;
+      animation: fadeIn 1s, vhs-flicker 0.1s infinite;
+    }
+    
+    .audio-track {
+      margin: 5px 0;
+      position: relative;
+      filter: drop-shadow(0 0 2px #f00);
+    }
+    
+    .track-number {
+      position: absolute;
+      left: -25px;
+      top: 0;
+      color: #f00;
+      font-size: 0.8em;
+      text-shadow: 0 0 3px #f00;
+      font-family: 'VT323', monospace;
+      image-rendering: pixelated;
+    }
+    
+    .audio-easter-egg iframe {
+      width: 100%;
+      height: 24px;
+      filter: grayscale(100%) contrast(200%);
+    }
+    
+    /* Stronger name blocker */
+    .name-blocker {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: 
+        repeating-linear-gradient(
+          0deg,
+          rgba(255,0,0,0.1),
+          rgba(255,0,0,0.1) 1px,
+          transparent 1px,
+          transparent 2px
+        ),
+        url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="black"/><text x="50%" y="50%" font-family="monospace" font-size="10" fill="red" text-anchor="middle" dominant-baseline="middle">[REDACTED]</text></svg>');
+      background-size: 100px 100px;
+      pointer-events: none;
+      z-index: 10;
+      display: none;
+      mix-blend-mode: hard-light;
+    }
+    
+    .audio-easter-egg.show .name-blocker {
+      display: block;
+      animation: static 0.3s infinite;
+    }
+    
+    /* Pixelated text effect */
+    .pixel-text {
+      font-family: 'VT323', monospace;
+      image-rendering: pixelated;
+      color: #f00;
+      text-shadow: 0 0 5px #f00;
+      letter-spacing: 1px;
+    }
+    
+    /* Easter egg copyright */
+    .audio-copyright {
+      font-size: 0.7em;
+      color: #f00;
+      text-align: center;
+      margin-top: 10px;
+      text-shadow: 0 0 3px #f00;
+      opacity: 0.8;
+    }
+
+    /* Binary glitch text */
+    .binary-glitch {
+      font-family: 'Courier New', monospace;
+      color: #0f0;
+      text-align: center;
+      margin: 20px 0;
+      position: relative;
+      overflow: hidden;
+    }
+    .binary-glitch::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(
+        rgba(0,255,0,0.1) 0%,
+        rgba(0,255,0,0) 10%,
+        rgba(0,255,0,0) 90%,
+        rgba(0,255,0,0.1) 100%
+      );
+      pointer-events: none;
+    }
+    .binary-glitch-text {
+      animation: glitch-text 5s infinite linear;
+    }
+
+    /* Pixelated overlay */
+    .pixel-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: 
+        repeating-linear-gradient(0deg, 
+          rgba(0,0,0,0.8) 0px, 
+          rgba(0,0,0,0.8) 1px, 
+          transparent 1px, 
+          transparent 2px),
+        repeating-linear-gradient(90deg, 
+          rgba(0,0,0,0.8) 0px, 
+          rgba(0,0,0,0.8) 1px, 
+          transparent 1px, 
+          transparent 2px);
+      pointer-events: none;
+      z-index: 2000;
+      opacity: 0.3;
+      display: none;
+    }
+    .pixel-overlay.active {
+      display: block;
+    }
+    
+    /* Secret message style */
+    .secret-message {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      font-size: 0.7em;
+      color: #f00;
+      text-shadow: 0 0 3px #f00;
+      opacity: 0.7;
+      font-family: 'VT323', monospace;
+      line-height: 1.2;
+      animation: flicker 5s infinite;
+      z-index: 1001;
+    }
+    .secret-message span {
+      display: block;
+      margin-top: 3px;
+      animation: flicker 7s infinite;
+      animation-delay: 1s;
+      font-size: 0.6em;
+    }
+    
+    /* Animations */
+    @keyframes wormhole-expand {
+      0% { width: 10px; height: 10px; opacity: 0; }
+      20% { opacity: 0.8; }
+      50% { width: 200vmax; height: 200vmax; opacity: 0.9; }
+      80% { opacity: 0.8; }
+      100% { width: 10px; height: 10px; opacity: 0; }
+    }
+    @keyframes gate-enter {
+      from { left: 100%; }
+      to { left: 0; }
+    }
+    @keyframes flicker {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    @keyframes glitch-bg {
+      0% { background-position: 0 0; }
+      100% { background-position: 40px 40px; }
+    }
+    @keyframes vhs-distortion {
+      0% { transform: translateY(0); }
+      20% { transform: translateY(-2px); }
+      40% { transform: translateY(1px); }
+      60% { transform: translateY(-1px); }
+      80% { transform: translateY(2px); }
+      100% { transform: translateY(0); }
+    }
+    @keyframes hologram-shine {
+      0% { transform: translateX(-100%) rotate(30deg); }
+      100% { transform: translateX(100%) rotate(30deg); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes glitch-text {
+      0% { text-shadow: 0.05em 0 0 rgba(255,0,0,0.75), -0.05em -0.025em 0 rgba(0,255,0,0.75), -0.025em 0.05em 0 rgba(0,0,255,0.75); }
+      14% { text-shadow: 0.05em 0 0 rgba(255,0,0,0.75), -0.05em -0.025em 0 rgba(0,255,0,0.75), -0.025em 0.05em 0 rgba(0,0,255,0.75); }
+      15% { text-shadow: -0.05em -0.025em 0 rgba(255,0,0,0.75), 0.025em 0.025em 0 rgba(0,255,0,0.75), -0.05em -0.05em 0 rgba(0,0,255,0.75); }
+      49% { text-shadow: -0.05em -0.025em 0 rgba(255,0,0,0.75), 0.025em 0.025em 0 rgba(0,255,0,0.75), -0.05em -0.05em 0 rgba(0,0,255,0.75); }
+      50% { text-shadow: 0.025em 0.05em 0 rgba(255,0,0,0.75), 0.05em 0 0 rgba(0,255,0,0.75), 0 -0.05em 0 rgba(0,0,255,0.75); }
+      99% { text-shadow: 0.025em 0.05em 0 rgba(255,0,0,0.75), 0.05em 0 0 rgba(0,255,0,0.75), 0 -0.05em 0 rgba(0,0,255,0.75); }
+      100% { text-shadow: -0.025em 0 0 rgba(255,0,0,0.75), -0.025em -0.025em 0 rgba(0,255,0,0.75), -0.025em -0.05em 0 rgba(0,0,255,0.75); }
+    }
+    @keyframes static {
+      0% { background-position: 0 0; }
+      100% { background-position: 100px 100px; }
+    }
+    
+    @keyframes vhs-flicker {
+      0%, 100% { opacity: 1; }
+      20% { opacity: 0.95; }
+      40% { opacity: 0.85; }
+      60% { opacity: 0.95; }
+      80% { opacity: 0.9; }
+    }
+    
+    .flicker {
+      animation: flicker 4s infinite;
+    }
+    .vhs-effect {
+      animation: vhs-distortion 0.1s infinite;
+    }
+
+    /* Draw button styling */
+    button {
+      margin-top: 1em;
+      background: #000;
+      color: #0f0;
+      border: 2px solid #0f0;
+      padding: 12px 25px;
+      font-size: 1.1em;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    button:hover {
+      background: #0f0;
+      color: #000;
+      text-shadow: 0 0 5px #000;
+    }
+
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+      .card {
+        width: 80vw;
+        height: 120vw;
+        margin: 10px;
+      }
+      #deck {
+        flex-direction: column;
+        align-items: center;
+      }
+      .godorb-interface {
+        padding: 0.5em;
+      }
+      h1 {
+        font-size: 1.5em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Pixelated overlay -->
+  <div class="pixel-overlay" id="pixelOverlay"></div>
+
+  <!-- Main copyright notice -->
+  <div class="copyright">LUZLEARNING © 2025</div>
+
+  <!-- Secret message (hidden until Easter egg) -->
+  <div class="secret-message" id="secretMessage" style="display:none;">
+    theluzinfer@luzlearning.org
+    <span>whisper the alignment to claim your prize</span>
+  </div>
+
+  <div id="gameContainer">
+    <!-- GodOrb Game -->
+    <div class="godorb-interface" id="godorbGame">
+      <h1 class="flicker">GODORB THE MISSING SUN</h1>
+      <p>Align three matching positions to awaken the gate</p>
+      <div id="deck"></div>
+      <button onclick="drawCards()">DRAW CARDS</button>
+      <div id="gameStatus" style="margin-top:1em;"></div>
+      <div class="binary-glitch" id="binaryMessage" style="display:none;">
+        <div class="binary-glitch-text">01010100 01101000 01100101 00100000 01001101 01101001 01110011 01110011 01101001 01101110 01100111 00100000 01010011 01110101 01101110 00100000 01001001 01101110 01100110 01100101 01110010 01101001 01101111 01110010 01101001 01110100 01111001</div>
+        <div style="margin-top:10px;font-size:0.8em;">[The Missing Sun Inferiority]</div>
+      </div>
+    </div>
+    
+    <!-- Wormhole Transition -->
+    <div class="wormhole" id="wormhole"></div>
+    
+    <!-- Shadow Gate -->
+    <div class="shadow-gate" id="shadowGate">
+      <h1 style="color:#f00" class="flicker">SHADOW GATE ONLINE</h1>
+      <p>Secure channel established - encryption active</p>
+      
+      <div class="message-log" id="messageLog">
+        > System initialized<br>
+        > Waiting for transmission...
+      </div>
+      
+      <textarea id="shadowMessage" placeholder="Your whisper through the void..." 
+                style="width:80%; height:100px; background:#000; color:#0f0; border:1px solid #f00; padding:10px; margin-bottom:15px;"></textarea>
+      <div>
+        <button onclick="sendMessage()" style="color:#f00; background:#000; border:1px solid #f00; padding:8px 15px; margin:0 10px; cursor:pointer;">TRANSMIT MESSAGE</button>
+        <button onclick="returnToGame()" style="color:#0f0; background:#000; border:1px solid #0f0; padding:8px 15px; margin:0 10px; cursor:pointer;">RETURN</button>
+      </div>
+      <div id="gateStatus" style="margin-top:1em;"></div>
+    </div>
+  </div>
+
+  <!-- Easter Egg Audio Container -->
+  <div class="audio-easter-egg" id="audioEasterEgg">
+    <div class="name-blocker"></div>
+    <div class="pixel-text" style="margin-bottom:10px;font-size:1.2em;">SYNC DECRYPTED</div>
+    <!-- Audio tracks will be inserted here -->
+    <div class="audio-copyright">LUZLEARNING © 2025</div>
+  </div>
+
+  <script>
+    // Enhanced Symbol Sets with fixed position 0 for specific cards
+    const symbols = {
+      bugs: [
+        { emoji: "🐉", name: "Dragonfly", desc: "Seer through dimensional veils. It watches you through insane frames.", pos: 0 },
+        { emoji: "🦂", name: "Centipede", desc: "Each step ignites an ember. Count the legs - there's always one more than you remember.", pos: Math.floor(Math.random() * 9) },
+        { emoji: "🦗", name: "Cicada", desc: "Knows when to emerge. The buzzing is coming from inside the earth.", pos: Math.floor(Math.random() * 9) },
+        { emoji: "✨", name: "Fireflies", desc: "Markers of lost thoughts. Light'in the paths where gods fought.", pos: Math.floor(Math.random() * 9) },
+        { emoji: "🌜", name: "Borinkenuela", desc: "Rooted in forgotten treaties. Its pollen carries memories not defeated.", pos: Math.floor(Math.random() * 9) },
+        { emoji: "🐛", name: "Gorgojo", desc: "Gnaws through time. You can hear it chewing at the walls of grime.", pos: Math.floor(Math.random() * 9) },
+        { emoji: "🦋", name: "HH Moth", desc: "Hums in ultraviolet. Its wings show patterns only visible through the side of your eyelid.", pos: Math.floor(Math.random() * 9) },
+        { emoji: "🦟", name: "Mosquito", desc: "Drinks poisoned memories. The itch remains long after the pain refranes.", pos: Math.floor(Math.random() * 9) },
+        { emoji: "🕷️", name: "Spidermom", desc: "Weaver of fate. You've been in her web since your birthdate.", pos: Math.floor(Math.random() * 9) }
+      ],
+      animals: [
+        { emoji: "🦇", name: "Bat", desc: "Navigates by silent echoes. It's using your heartbeat to find the hueco.", pos: 0 },
+        { emoji: "🐅", name: "Tiger", desc: "Protector of sacred geometry. Its terror conveys beautifully.", pos: Math.floor(Math.random() * 9) },
+        { emoji: "🐒", name: "Monkey", desc: "Mimics forgotten gods. Its laughter comes from too many mouths.", pos: Math.floor(Math.random() * 9) },
+        { emoji: "🐀", name: "Rat", desc: "Builds kingdoms from the forgotten. You'll find its treasures every option .", pos: Math.floor(Math.random() * 9) },
+        { emoji: "🐸", name: "Frog", desc: "Sings boundless hymns. The song gets louder and never ends.", pos: Math.floor(Math.random() * 9) },
+        { emoji: "🐢", name: "Turtle", desc: "Carries cosmic memory. The patterns on its shell keep changing when you tell.", pos: Math.floor(Math.random() * 9) },
+        { emoji: "🐟", name: "Fish", desc: "Swims the dream currents. It gleams in the dark to illuminate all deterents, .", pos: Math.floor(Math.random() * 9) },
+        { emoji: "🐍", name: "Snake", desc: "Sheds infinite skins. Especially the one you in.", pos: Math.floor(Math.random() * 9) },
+        { emoji: "🦅", name: "Crow", desc: "Catalogs unfinished stories. Vison's that will never bore me.", pos: Math.floor(Math.random() * 9) },
+      ],
+      emotions: [
+        { emoji: "🧧", name: "Grief", desc: "Waters new growth. The roots are growing the consoul.", pos: Math.floor(Math.random() * 9) },
+        { emoji: "👁️", name: "Insight", desc: "Pierces through veils. It does not care what prevails.", pos: Math.floor(Math.random() * 9) },
+        { emoji: "🗡️", name: "Invoke", desc: "Awakens dormant forces. They've been waiting for you to set the orbit.", pos: Math.floor(Math.random() * 9) },
+        { emoji: "🔑", name: "Conjure", desc: "Manifests from none. The key in the place where we begun.", pos: Math.floor(Math.random() * 9) },
+        { emoji: "🎵", name: "Resonance", desc: "The beat of the drum. Liberator of a quite slum.", pos: 0 },
+        { emoji: "🎭", name: "Hidden", desc: "Wears necessary masks. What's underneath? All you have to do is ask.", pos: Math.floor(Math.random() * 9) },
+        { emoji: "🧠", name: "Intuition", desc: "Knows without saying. It's been whispering an old cadence.", pos: Math.floor(Math.random() * 9) },
+        { emoji: "🌪️", name: "Madness", desc: "Dances on the edge. The brave are who is left.", pos: Math.floor(Math.random() * 9) },
+        { emoji: "⚡", name: "Potential", desc: "Quivers before action. Becareful for all distractions.", pos: Math.floor(Math.random() * 9) }
+      ]
+    };
+
+    // Audio track iframes - your custom tracks
+    const audioTracks = [
+      '<iframe src=https://audius.co/embed/track/z9Nxrlp?flavor=tiny width="100%" height="24" allowTransparency="true" allow="encrypted-media" style="border: none;"></iframe>',
+      '<iframe src=https://audius.co/embed/track/gWyb9Wp?flavor=tiny width="100%" height="24" allowTransparency="true" allow="encrypted-media" style="border: none;"></iframe>',
+      '<iframe src=https://audius.co/embed/track/xkqkjZ7?flavor=tiny width="100%" height="24" allowTransparency="true" allow="encrypted-media" style="border: none;"></iframe>',
+      '<iframe src="https://audius.co/embed/track/g54l20p?flavor=tiny" width="100%" height="24" allowTransparency="true" allow="encrypted-media" style="border: none;"></iframe>',
+      '<iframe src="https://audius.co/embed/track/Eqk6goM?flavor=tiny" width="100%" height="24" allowTransparency="true" allow="encrypted-media" style="border: none;"></iframe>',
+      '<iframe src="https://audius.co/embed/track/W0O90zZ?flavor=tiny" width="100%" height="24" allowTransparency="true" allow="encrypted-media" style="border: none;"></iframe>',
+      '<iframe src="https://audius.co/embed/track/jbloORM?flavor=tiny" width="100%" height="24" allowTransparency="true" allow="encrypted-media" style="border: none;"></iframe>',
+      '<iframe src="https://audius.co/embed/track/Y6Vqavp?flavor=tiny" width="100%" height="24" allowTransparency="true" allow="encrypted-media" style="border: none;"></iframe>',
+      '<iframe src="https://audius.co/embed/track/dK28K3y?flavor=tiny" width="100%" height="24" allowTransparency="true" allow="encrypted-media" style="border: none;"></iframe>',
+      '<iframe src="https://audius.co/embed/track/Nxpbvqx?flavor=tiny" width="100%" height="24" allowTransparency="true" allow="encrypted-media" style="border: none;"></iframe>',
+      '<iframe src="https://audius.co/embed/track/ExbE2A4?flavor=tiny" width="100%" height="24" allowTransparency="true" allow="encrypted-media" style="border: none;"></iframe>'
+    ];
+
+    let currentCards = [];
+    let messageLog = [];
+    
+    // Calculate probability of getting the Easter egg
+    function calculateProbability() {
+      return "~0.045% (1 in 2200) per draw";
+    }
+    
+    // Draw Cards
+    function drawCards() {
+      const deck = document.getElementById('deck');
+      deck.innerHTML = '';
+      currentCards = [];
+      document.getElementById('gameStatus').textContent = '';
+      document.getElementById('audioEasterEgg').classList.remove('show');
+      document.getElementById('audioEasterEgg').innerHTML = '';
+      document.getElementById('binaryMessage').style.display = 'none';
+      document.getElementById('pixelOverlay').classList.remove('active');
+      document.getElementById('secretMessage').style.display = 'none';
+      
+      // Get one random card from each category
+      const bug = symbols.bugs[Math.floor(Math.random() * symbols.bugs.length)];
+      const animal = symbols.animals[Math.floor(Math.random() * symbols.animals.length)];
+      const emotion = symbols.emotions[Math.floor(Math.random() * symbols.emotions.length)];
+      
+      currentCards = [
+        { 
+          ...bug,
+          type: 'bug', 
+          revealed: false
+        },
+        { 
+          ...animal,
+          type: 'animal', 
+          revealed: false
+        },
+        { 
+          ...emotion,
+          type: 'emotion', 
+          revealed: false
+        }
+      ];
+      
+      // Create cards
+      currentCards.forEach((card, index) => {
+        const cardEl = document.createElement('div');
+        cardEl.className = 'card';
+        cardEl.innerHTML = `
+          <div class="card-inner">
+            <div class="card-face card-front">
+              <div style="font-size:3em;">${card.emoji}</div>
+              <div style="font-size:0.8em; margin-top:10px; color:#333;">${card.name}</div>
+            </div>
+            <div class="card-face card-back">
+              <div style="font-size:2em;">${card.emoji}</div>
+              <div>${card.name}</div>
+              <div style="font-size:0.7em; margin-top:10px;">${card.desc}</div>
+              <div style="margin-top:15px;font-size:0.6em; color:#000;">Pos: ${card.pos}</div>
+            </div>
+          </div>
+        `;
+        cardEl.onclick = () => flipCard(cardEl, index);
+        deck.appendChild(cardEl);
+      });
+    }
+    
+    // Flip Card
+    function flipCard(cardEl, index) {
+      if (!cardEl.classList.contains('flipped')) {
+        cardEl.classList.add('flipped');
+        currentCards[index].revealed = true;
+        
+        // Add VHS distortion effect
+        cardEl.classList.add('vhs-effect');
+        setTimeout(() => {
+          cardEl.classList.remove('vhs-effect');
+        }, 300);
+        
+        checkAlignment();
+      }
+    }
+    
+    // Check Alignment
+    function checkAlignment() {
+      const flippedCards = document.querySelectorAll('.flipped');
+      if (flippedCards.length === 3) {
+        // Check if all positions match
+        const positions = currentCards.map(card => card.pos);
+        const allSame = positions.every(pos => pos === positions[0]);
+        
+        // Check if we have the specific combination for the Easter egg
+        const hasBat = currentCards.some(card => card.name === "Bat");
+        const hasDragonfly = currentCards.some(card => card.name === "Dragonfly");
+        const hasResonance = currentCards.some(card => card.name === "Resonance");
+        const isEasterEgg = hasBat && hasDragonfly && hasResonance && allSame && positions[0] === 0;
+        
+        if (allSame) {
+          if (isEasterEgg) {
+            // Show the audio Easter egg
+            const audioContainer = document.getElementById('audioEasterEgg');
+            audioContainer.innerHTML = '';
+            
+            // Add your custom tracks with numbering
+            audioTracks.forEach((track, index) => {
+              const trackDiv = document.createElement('div');
+              trackDiv.className = 'audio-track';
+              trackDiv.innerHTML = `
+                <span class="track-number">${index.toString().padStart(2, '0')}</span>
+                ${track}
+              `;
+              audioContainer.appendChild(trackDiv);
+            });
+            
+            // Add the copyright notice
+            const copyrightDiv = document.createElement('div');
+            copyrightDiv.className = 'audio-copyright';
+            copyrightDiv.textContent = 'LUZLEARNING © 2025';
+            audioContainer.appendChild(copyrightDiv);
+            
+            audioContainer.classList.add('show');
+            
+            // Show binary message and pixel overlay
+            document.getElementById('binaryMessage').style.display = 'block';
+            document.getElementById('pixelOverlay').classList.add('active');
+            
+            // Show secret message
+            document.getElementById('secretMessage').style.display = 'block';
+            
+            document.getElementById('gameStatus').innerHTML = 
+              `<span style="color:#0f0">COSMIC ALIGNMENT ACHIEVED</span><br>
+              <span style="font-size:0.8em">The hidden frequencies are revealed...</span><br>
+              <span style="font-size:0.7em;color:#888">Probability: ${calculateProbability()}</span>`;
+          } else {
+            document.getElementById('gameStatus').innerHTML = 
+              '<span style="color:#0f0">ALIGNMENT DETECTED</span><br>' +
+              '<span style="font-size:0.8em">Gateway coordinates confirmed...</span>';
+          }
+          setTimeout(activateWormhole, 2000);
+        } else {
+          document.getElementById('gameStatus').innerHTML = 
+            '<span style="color:#f00">NO ALIGNMENT</span><br>' +
+            '<span style="font-size:0.8em">The void remains silent...</span>';
+        }
+      }
+    }
+    
+    // Wormhole Transition
+    function activateWormhole() {
+      const wormhole = document.getElementById('wormhole');
+      const game = document.getElementById('godorbGame');
+      
+      // Add messages to the shadow gate log
+      messageLog = currentCards.map(card => 
+        `> [${card.type.toUpperCase()}] ${card.name}: ${card.desc} (Pos:${card.pos})`
+      );
+      messageLog.unshift("> Gateway established. Transmission begins:");
+      document.getElementById('messageLog').innerHTML = messageLog.join('<br>');
+      
+      // Animate wormhole
+      wormhole.style.animation = 'wormhole-expand 3.5s forwards';
+      game.style.filter = 'blur(8px) brightness(0.5)';
+      
+      // After wormhole completes, reveal gate
+      setTimeout(() => {
+        document.getElementById('shadowGate').style.animation = 'gate-enter 2s forwards';
+        game.style.display = 'none';
+      }, 3500);
+    }
+    
+    // Return to Game
+    function returnToGame() {
+      const game = document.getElementById('godorbGame');
+      const gate = document.getElementById('shadowGate');
+      
+      gate.style.animation = '';
+      gate.style.left = '100%';
+      game.style.display = 'flex';
+      setTimeout(() => {
+        game.style.filter = 'none';
+      }, 100);
+      
+      // Reset game
+      drawCards();
+    }
+    
+    // Message Sending
+    function sendMessage() {
+      const message = document.getElementById('shadowMessage').value.trim();
+      const status = document.getElementById('gateStatus');
+      const log = document.getElementById('messageLog');
+      
+      if (message) {
+        // Add message to log with timestamp
+        const timestamp = new Date().toLocaleTimeString();
+        messageLog.push(`> [${timestamp}] USER: ${message}`);
+        
+        // Simulate response after delay
+        log.innerHTML = messageLog.join('<br>');
+        log.scrollTop = log.scrollHeight;
+        
+        setTimeout(() => {
+          const responses = [
+            "> SYSTEM: Message received. They're listening.",
+            "> SYSTEM: Transmission distorted. Try again.",
+            "> UNKNOWN: We see you.",
+            "> SYSTEM: The walls are thinning.",
+            "> UNKNOWN: Come closer.",
+            "> SYSTEM: They're responding.",
+            "> UNKNOWN: You're almost there."
+          ];
+          const response = responses[Math.floor(Math.random() * responses.length)];
+          messageLog.push(response);
+          log.innerHTML = messageLog.join('<br>');
+          log.scrollTop = log.scrollHeight;
+        }, 1500);
+        
+        document.getElementById('shadowMessage').value = '';
+        status.innerHTML = '<span style="color:#0f0">Message transmitted into the void...</span>';
+      } else {
+        status.innerHTML = '<span style="color:#f00">The void whispers nothing...</span>';
+      }
+    }
+    
+    // Initialize
+    drawCards();
+  </script>
+</body>
+</html>
