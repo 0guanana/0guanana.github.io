@@ -1,647 +1,644 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>THE MISSING SUN: THEGODORB</title>
+  <meta charset="utf-8" />
+  <title>GODORB :: Cosmic Alignment</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    /* Cosmic Checkerboard with glitch effect */
+    html,body { height:100%; margin:0; padding:0; }
+    /* Keep UI readable (light text on dark bg) but remove blanket red tint */
     body {
-      background: 
-        repeating-conic-gradient(#000 0% 25%, #111 0% 50%) 
+      background:
+        repeating-conic-gradient(#000 0% 25%, #0b0b0b 0% 50%)
         0% 0% / 40px 40px;
-      color: #0f0;
-      font-family: 'Courier New', monospace;
-      margin: 0;
-      overflow: hidden;
-      height: 100vh;
-      animation: glitch-bg 10s infinite linear;
-      position: relative;
+      color:#e6e6e6; /* general UI text */
+      font-family:'Courier New',monospace;
+      overflow:hidden;
+      height:100vh;
+      animation:glitch-bg 10s infinite linear;
+      position:relative;
     }
-    
-    /* Copyright notice for main pages */
     .copyright {
-      position: fixed;
-      bottom: 10px;
-      left: 0;
-      width: 100%;
-      text-align: center;
-      font-size: 0.7em;
-      color: #0f0;
-      opacity: 0.7;
-      z-index: 100;
+      position:fixed;
+      bottom:10px;
+      left:0;
+      width:100%;
+      text-align:center;
+      font-size:0.8em;
+      color:#0f0;
+      opacity:0.9;
+      z-index:100;
+      pointer-events:none;
+      font-family:'Courier New',monospace;
     }
-    
-    /* Game Container */
-    #gameContainer {
-      position: relative;
-      width: 100%;
-      height: 100%;
+
+    /* MATRIX canvas: make letters vivid red, no overlay tint */
+    #matrixCanvas {
+      position:fixed;
+      top:0; left:0;
+      width:100%; height:100%;
+      z-index:0;
+      pointer-events:none;
+      opacity:1;                /* fully visible */
+      mix-blend-mode:normal;   /* avoid tinting everything */
+      background:transparent;
     }
-    
-    /* GodOrb Interface */
+
+    #lightningCanvas {
+      position:fixed;
+      top:0; left:0;
+      width:100%; height:100%;
+      z-index:10000;
+      pointer-events:none;
+      mix-blend-mode:screen;
+    }
+
+    #gameContainer { position:relative; width:100%; height:100%; z-index:2; }
     .godorb-interface {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      padding: 1em;
-      box-sizing: border-box;
-      transition: filter 1.5s;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      position:absolute; width:100%; height:100%; padding:1em; box-sizing:border-box;
+      transition:filter 1.5s; display:flex; flex-direction:column; align-items:center;
+      z-index:3;
     }
-    
-    /* Larger Cards with holographic effect */
+    h1.flicker { margin:0; text-align:center; font-size:2.2rem; color:#ff4444; }
     .card {
-      display: inline-block;
-      width: 250px;
-      height: 350px;
-      margin: 15px;
-      perspective: 1000px;
-      cursor: pointer;
-      position: relative;
-      overflow: hidden;
-      transition: transform 0.3s;
+      display:inline-block; width:250px; height:350px; margin:15px; perspective:1000px; cursor:pointer;
+      position:relative; overflow:hidden; transition: transform 0.3s; z-index:3;
     }
-    .card:hover {
-      transform: translateY(-5px) scale(1.02);
-    }
-    .card-inner {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      transition: transform 1s;
-      transform-style: preserve-3d;
-    }
-    .card.flipped .card-inner {
-      transform: rotateY(180deg);
-    }
-    .card-face {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      backface-visibility: hidden;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      border-radius: 15px;
-      padding: 1.5em;
-      box-sizing: border-box;
-    }
+    .card:hover { transform: translateY(-5px) scale(1.02); }
+    .card-inner { position:relative; width:100%; height:100%; transition: transform 1s; transform-style:preserve-3d; }
+    .card.flipped .card-inner { transform:rotateY(180deg); }
+    .card-face { position:absolute; width:100%; height:100%; backface-visibility:hidden; display:flex; flex-direction:column; justify-content:center; align-items:center; border-radius:15px; padding:1.5em; box-sizing:border-box; }
     .card-front {
-      background: linear-gradient(135deg, #c0c0c0 0%, #a0a0a0 20%, #808080 40%, #606060 60%, #404040 80%, #202020 100%);
-      border: 3px solid #fff;
-      box-shadow: 
-        0 0 25px rgba(255,255,255,0.5),
-        0 0 40px rgba(255,255,255,0.2);
+      background:linear-gradient(135deg,#2a2a2a 0%,#1f1f1f 100%);
+      border:3px solid #444;
+      box-shadow:0 0 25px rgba(255,255,255,0.03);
+      color:#e6e6e6;
     }
-    .card-front div:first-child {
-      font-size: 5em !important;
-      margin-bottom: 15px;
-    }
-    .card-front div:nth-child(2) {
-      font-size: 1.2em;
-      margin-top: 10px;
-      color: #333;
-    }
+    .card-front div:first-child { font-size:5em !important; margin-bottom:15px; }
+    .card-front div:nth-child(2) { font-size:1.2em; margin-top:10px; color:#ddd; }
     .card-back {
-      background: linear-gradient(
-        135deg,
-        #ffd700 0%,
-        #ffcc00 20%,
-        #ff9900 40%,
-        #ff6600 60%,
-        #ff3300 80%,
-        #ff0000 100%
-      );
-      border: 3px solid #f80;
-      transform: rotateY(180deg);
-      box-shadow: 
-        0 0 25px rgba(255,215,0,0.7),
-        0 0 40px rgba(255,165,0,0.5);
+      background:linear-gradient(135deg,#222 0%,#111 100%);
+      border:3px solid #663300; transform:rotateY(180deg);
+      box-shadow:0 0 25px rgba(255,215,0,0.03);
+      color:#fff;
     }
-    .card-back div:first-child {
-      font-size: 3em !important;
+    .card-back div:first-child { font-size:3em !important; margin-bottom:15px; }
+    .card-back div:nth-child(2) { font-size:1.3em; font-weight:bold; margin-bottom:10px; }
+    .card-back div:nth-child(3) { font-size:0.9em; line-height:1.4; color:#ddd; }
+    .card-back div:nth-child(4) { position:absolute; bottom:15px; font-size:0.8em; opacity:0.7; color:#bbb; }
+    #deck { display:flex; flex-wrap:wrap; justify-content:center; gap:20px; width:90%; max-width:1200px; margin:20px auto; }
+    .wormhole { position:absolute; top:50%; left:50%; width:10px; height:10px; border-radius:50%; background:radial-gradient(circle,#ff4444 0%, rgba(255,0,0,0) 70%); transform:translate(-50%,-50%); opacity:0; pointer-events:none; z-index:4; }
+    .shadow-gate {
+      position:absolute; top:0; left:100%; width:100%; height:100%; padding:2em; box-sizing:border-box;
+      background:repeating-conic-gradient(#000 0% 25%, #0b0b0b 0% 50%) 0% 0% / 40px 40px;
+      border-left:1px solid #400;
+      display:flex; flex-direction:column; align-items:center; overflow-y:auto;
+      z-index:5;
+    }
+    .message-log {
+      width:80%; height:300px; background:#000; border:1px solid #440000; color:#ff6666; padding:10px; margin-bottom:20px; overflow-y:auto; font-family:'Courier New',monospace; font-size:0.9em; position:relative;
+    }
+
+    /* single floating audio area (kept hidden until triggered) */
+    .audio-easter-egg { position:fixed; bottom:20px; right:20px; width:320px; background:rgba(0,0,0,0.9); border:1px solid #660000; padding:10px; display:none; flex-direction:column; z-index:20001; box-shadow:0 0 20px rgba(255,0,0,0.08); font-family:'Courier New',monospace; overflow:hidden; color:#ff6666; }
+    .audio-easter-egg.show { display:flex; animation:fadeIn 0.9s, vhs-flicker 0.1s infinite; }
+    .album-player { width:100%; margin-top:8px; border-top:1px solid rgba(255,0,0,0.06); padding-top:8px; }
+
+    .pixel-overlay { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:2000; opacity:0; display:none; }
+    .pixel-overlay.active { display:block; opacity:0.12; background:linear-gradient(transparent 0%, rgba(0,0,0,0.25) 100%); }
+
+    .nft-gate-panel { width:80%; background:#060600; border:1px solid #440000; padding:12px; margin-top:12px; color:#ff6666; font-family:'Courier New',monospace; }
+    .nft-gate-panel button { border-color:#440000; color:#ff6666; background:#000; }
+
+    .cinematic-overlay {
+      position:fixed; top:0; left:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center;
+      background:rgba(0,0,0,0.6); z-index:10002; pointer-events:none; opacity:0; transition:opacity .25s;
+      mix-blend-mode:normal;
+    }
+    .cinematic-overlay.show { opacity:1; pointer-events:auto; }
+    .cinematic-text {
+      color:#fff; font-family:'Courier New', monospace; font-size:3rem; letter-spacing:4px; text-align:center;
+      text-shadow: 0 0 30px rgba(255,255,255,0.06), 0 0 40px rgba(255,68,68,0.08);
+      transform:rotate(-1deg);
+    }
+
+    .control-bar { margin-top:18px; width:80%; max-width:900px; text-align:center; z-index:6; }
+    .draw-counter { position:fixed; top:10px; right:10px; background:rgba(0,0,0,0.7); border:1px solid #440000; padding:8px; z-index:6; color:#ff6666; }
+    .binary-glitch { font-family:'Courier New', monospace; color:#ff6666; text-align:center; margin:20px 0; position:relative; overflow:hidden; z-index:3; }
+    .binary-glitch-text { animation:glitch-text 5s infinite linear; }
+
+    /* Secret answer form styles */
+    .secret-form {
+      width: 80%;
+      background: #111;
+      border: 1px solid #440000;
+      padding: 20px;
+      margin-top: 20px;
+      display: none;
+    }
+    .secret-form input {
+      width: 100%;
+      background: #000;
+      color: #ff6666;
+      border: 1px solid #440000;
+      padding: 10px;
+      margin-bottom: 15px;
+      font-family: 'Courier New', monospace;
+    }
+    .secret-form button {
+      width: 100%;
+      background: #000;
+      color: #ff6666;
+      border: 1px solid #440000;
+      padding: 12px;
+      cursor: pointer;
+      font-family: 'Courier New', monospace;
+    }
+    .secret-form h3 {
+      color: #ff6666;
+      text-align: center;
       margin-bottom: 15px;
     }
-    .card-back div:nth-child(2) {
-      font-size: 1.3em;
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-    .card-back div:nth-child(3) {
-      font-size: 0.9em;
-      line-height: 1.4;
-    }
-    .card-back div:nth-child(4) {
-      position: absolute;
-      bottom: 15px;
-      font-size: 0.8em;
-      opacity: 0.7;
-    }
 
-    /* Deck container */
-    #deck {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 20px;
-      width: 90%;
-      max-width: 1200px;
-      margin: 20px auto;
-    }
-
-    /* Wormhole Transition */
-    .wormhole {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: radial-gradient(circle, #0f0 0%, rgba(0,255,0,0) 70%);
-      transform: translate(-50%, -50%);
-      opacity: 0;
-      pointer-events: none;
-      z-index: 100;
-    }
-    
-    /* Shadow Gate */
-    .shadow-gate {
-      position: absolute;
-      top: 0;
-      left: 100%;
-      width: 100%;
-      height: 100%;
-      padding: 2em;
-      box-sizing: border-box;
-      background: 
-        repeating-conic-gradient(#000 0% 25%, #111 0% 50%) 
-        0% 0% / 40px 40px;
-      border-left: 1px solid #f00;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      overflow-y: auto;
-    }
-    
-    /* Message display in shadow gate */
-    .message-log {
-      width: 80%;
-      height: 300px;
-      background: #000;
-      border: 1px solid #f00;
-      color: #0f0;
-      padding: 10px;
-      margin-bottom: 20px;
-      overflow-y: auto;
-      font-family: 'Courier New', monospace;
-      font-size: 0.9em;
-      position: relative;
-    }
-    .message-log::after {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient(
-        rgba(0,255,0,0.1) 0%,
-        rgba(0,255,0,0) 10%,
-        rgba(0,255,0,0) 90%,
-        rgba(0,255,0,0.1) 100%
-      );
-      pointer-events: none;
-    }
-
-    /* Updated Audio Easter Egg Styles */
-    .audio-easter-egg {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      width: 300px;
-      background: rgba(0,0,0,0.9);
-      border: 1px solid #f00;
-      padding: 10px;
-      display: none;
-      flex-direction: column;
-      z-index: 1000;
-      box-shadow: 0 0 20px rgba(255,0,0,0.3);
-      font-family: 'Courier New', monospace;
-      overflow: hidden;
-    }
-    
-    .audio-easter-egg.show {
-      display: flex;
-      animation: fadeIn 1s, vhs-flicker 0.1s infinite;
-    }
-    
-    .audio-track {
-      margin: 5px 0;
-      position: relative;
-      filter: drop-shadow(0 0 2px #f00);
-    }
-    
-    .track-number {
-      position: absolute;
-      left: -25px;
-      top: 0;
-      color: #f00;
-      font-size: 0.8em;
-      text-shadow: 0 0 3px #f00;
-      font-family: 'VT323', monospace;
-      image-rendering: pixelated;
-    }
-    
-    .audio-easter-egg iframe {
-      width: 100%;
-      height: 24px;
-      filter: grayscale(100%) contrast(200%);
-    }
-    
-    /* Stronger name blocker */
-    .name-blocker {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: 
-        repeating-linear-gradient(
-          0deg,
-          rgba(255,0,0,0.1),
-          rgba(255,0,0,0.1) 1px,
-          transparent 1px,
-          transparent 2px
-        ),
-        url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="black"/><text x="50%" y="50%" font-family="monospace" font-size="10" fill="red" text-anchor="middle" dominant-baseline="middle">[REDACTED]</text></svg>');
-      background-size: 100px 100px;
-      pointer-events: none;
-      z-index: 10;
-      display: none;
-      mix-blend-mode: hard-light;
-    }
-    
-    .audio-easter-egg.show .name-blocker {
-      display: block;
-      animation: static 0.3s infinite;
-    }
-    
-    /* Pixelated text effect */
-    .pixel-text {
-      font-family: 'VT323', monospace;
-      image-rendering: pixelated;
-      color: #f00;
-      text-shadow: 0 0 5px #f00;
-      letter-spacing: 1px;
-    }
-    
-    /* Easter egg copyright */
-    .audio-copyright {
-      font-size: 0.7em;
-      color: #f00;
-      text-align: center;
-      margin-top: 10px;
-      text-shadow: 0 0 3px #f00;
-      opacity: 0.8;
-    }
-
-    /* Binary glitch text */
-    .binary-glitch {
-      font-family: 'Courier New', monospace;
-      color: #0f0;
-      text-align: center;
-      margin: 20px 0;
-      position: relative;
-      overflow: hidden;
-    }
-    .binary-glitch::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient(
-        rgba(0,255,0,0.1) 0%,
-        rgba(0,255,0,0) 10%,
-        rgba(0,255,0,0) 90%,
-        rgba(0,255,0,0.1) 100%
-      );
-      pointer-events: none;
-    }
-    .binary-glitch-text {
-      animation: glitch-text 5s infinite linear;
-    }
-
-    /* Pixelated overlay */
-    .pixel-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: 
-        repeating-linear-gradient(0deg, 
-          rgba(0,0,0,0.8) 0px, 
-          rgba(0,0,0,0.8) 1px, 
-          transparent 1px, 
-          transparent 2px),
-        repeating-linear-gradient(90deg, 
-          rgba(0,0,0,0.8) 0px, 
-          rgba(0,0,0,0.8) 1px, 
-          transparent 1px, 
-          transparent 2px);
-      pointer-events: none;
-      z-index: 2000;
-      opacity: 0.3;
-      display: none;
-    }
-    .pixel-overlay.active {
-      display: block;
-    }
-    
-    /* Secret message style */
-    .secret-message {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      font-size: 0.7em;
-      color: #f00;
-      text-shadow: 0 0 3px #f00;
-      opacity: 0.7;
-      font-family: 'VT323', monospace;
-      line-height: 1.2;
-      animation: flicker 5s infinite;
-      z-index: 1001;
-    }
-    .secret-message span {
-      display: block;
-      margin-top: 3px;
-      animation: flicker 7s infinite;
-      animation-delay: 1s;
-      font-size: 0.6em;
-    }
-    
-    /* Animations */
-    @keyframes wormhole-expand {
-      0% { width: 10px; height: 10px; opacity: 0; }
-      20% { opacity: 0.8; }
-      50% { width: 200vmax; height: 200vmax; opacity: 0.9; }
-      80% { opacity: 0.8; }
-      100% { width: 10px; height: 10px; opacity: 0; }
-    }
-    @keyframes gate-enter {
-      from { left: 100%; }
-      to { left: 0; }
-    }
-    @keyframes flicker {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
-    }
-    @keyframes glitch-bg {
-      0% { background-position: 0 0; }
-      100% { background-position: 40px 40px; }
-    }
-    @keyframes vhs-distortion {
-      0% { transform: translateY(0); }
-      20% { transform: translateY(-2px); }
-      40% { transform: translateY(1px); }
-      60% { transform: translateY(-1px); }
-      80% { transform: translateY(2px); }
-      100% { transform: translateY(0); }
-    }
-    @keyframes hologram-shine {
-      0% { transform: translateX(-100%) rotate(30deg); }
-      100% { transform: translateX(100%) rotate(30deg); }
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
+    @keyframes wormhole-expand { 0%{width:10px;height:10px;opacity:0;}20%{opacity:0.8;}50%{width:200vmax;height:200vmax;opacity:0.9;}80%{opacity:0.8;}100%{width:10px;height:10px;opacity:0;} }
+    @keyframes gate-enter { from { left: 100%; } to { left: 0; } }
+    @keyframes glitch-bg { 0% { background-position:0 0; } 100% { background-position:40px 40px; } }
+    @keyframes vhs-distortion { 0%{transform:translateY(0);}20%{transform:translateY(-2px);}40%{transform:translateY(1px);}60%{transform:translateY(-1px);}80%{transform:translateY(2px);}100%{transform:translateY(0);} }
+    @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
     @keyframes glitch-text {
-      0% { text-shadow: 0.05em 0 0 rgba(255,0,0,0.75), -0.05em -0.025em 0 rgba(0,255,0,0.75), -0.025em 0.05em 0 rgba(0,0,255,0.75); }
-      14% { text-shadow: 0.05em 0 0 rgba(255,0,0,0.75), -0.05em -0.025em 0 rgba(0,255,0,0.75), -0.025em 0.05em 0 rgba(0,0,255,0.75); }
-      15% { text-shadow: -0.05em -0.025em 0 rgba(255,0,0,0.75), 0.025em 0.025em 0 rgba(0,255,0,0.75), -0.05em -0.05em 0 rgba(0,0,255,0.75); }
-      49% { text-shadow: -0.05em -0.025em 0 rgba(255,0,0,0.75), 0.025em 0.025em 0 rgba(0,255,0,0.75), -0.05em -0.05em 0 rgba(0,0,255,0.75); }
-      50% { text-shadow: 0.025em 0.05em 0 rgba(255,0,0,0.75), 0.05em 0 0 rgba(0,255,0,0.75), 0 -0.05em 0 rgba(0,0,255,0.75); }
-      99% { text-shadow: 0.025em 0.05em 0 rgba(255,0,0,0.75), 0.05em 0 0 rgba(0,255,0,0.75), 0 -0.05em 0 rgba(0,0,255,0.75); }
-      100% { text-shadow: -0.025em 0 0 rgba(255,0,0,0.75), -0.025em -0.025em 0 rgba(0,255,0,0.75), -0.025em -0.05em 0 rgba(0,0,255,0.75); }
+      0% { text-shadow: 0.05em 0 0 rgba(255,68,68,0.75), -0.05em -0.025em 0 rgba(255,160,160,0.5); }
+      15% { text-shadow: -0.05em -0.025em 0 rgba(255,68,68,0.75), 0.025em 0.025em 0 rgba(255,160,160,0.5); }
+      50% { text-shadow: 0.025em 0.05em 0 rgba(255,68,68,0.75), 0 -0.05em 0 rgba(255,160,160,0.5); }
+      100% { text-shadow: -0.025em 0 0 rgba(255,68,68,0.75), -0.025em -0.025em 0 rgba(255,160,160,0.5); }
     }
-    @keyframes static {
-      0% { background-position: 0 0; }
-      100% { background-position: 100px 100px; }
-    }
-    
-    @keyframes vhs-flicker {
-      0%, 100% { opacity: 1; }
-      20% { opacity: 0.95; }
-      40% { opacity: 0.85; }
-      60% { opacity: 0.95; }
-      80% { opacity: 0.9; }
-    }
-    
-    .flicker {
-      animation: flicker 4s infinite;
-    }
-    .vhs-effect {
-      animation: vhs-distortion 0.1s infinite;
-    }
+    @keyframes vhs-flicker { 0%,100%{opacity:1;}20%{opacity:0.95;}40%{opacity:0.85;}60%{opacity:0.95;}80%{opacity:0.9;} }
 
-    /* Draw button styling */
-    button {
-      margin-top: 1em;
-      background: #000;
-      color: #0f0;
-      border: 2px solid #0f0;
-      padding: 12px 25px;
-      font-size: 1.1em;
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-    button:hover {
-      background: #0f0;
-      color: #000;
-      text-shadow: 0 0 5px #000;
-    }
+    button { margin-top:1em; background:#000; color:#ff6666; border:2px solid #440000; padding:12px 25px; font-size:1.1em; cursor:pointer; transition:all 0.3s; }
+    button:hover { background:#ff6666; color:#000; text-shadow:0 0 5px #000; }
 
-    /* Mobile responsiveness */
-    @media (max-width: 768px) {
-      .card {
-        width: 80vw;
-        height: 120vw;
-        margin: 10px;
-      }
-      #deck {
-        flex-direction: column;
-        align-items: center;
-      }
-      .godorb-interface {
-        padding: 0.5em;
-      }
-      h1 {
-        font-size: 1.5em;
-      }
+    @media (max-width:768px) {
+      .card { width:80vw; height:120vw; margin:10px; }
+      #deck { flex-direction:column; align-items:center; }
+      h1 { font-size:1.5em; }
+      .audio-easter-egg { width:90%; right:5%; bottom:10px; }
+      .album-player iframe { height:220px; }
     }
   </style>
 </head>
 <body>
-  <!-- Pixelated overlay -->
+  <canvas id="matrixCanvas" aria-hidden="true"></canvas>
+  <canvas id="lightningCanvas" aria-hidden="true"></canvas>
   <div class="pixel-overlay" id="pixelOverlay"></div>
-
-  <!-- Main copyright notice -->
+  <div class="draw-counter" id="drawCounter">DRAWS: 0</div>
   <div class="copyright">LUZLEARNING © 2025</div>
 
-  <!-- Secret message (hidden until Easter egg) -->
-  <div class="secret-message" id="secretMessage" style="display:none;">
-    theluzinfer@luzlearning.org
-    <span>whisper the alignment to claim your prize</span>
-  </div>
-
   <div id="gameContainer">
-    <!-- GodOrb Game -->
     <div class="godorb-interface" id="godorbGame">
-      <h1 class="flicker">THE MISSING SUN: THEGODORB</h1>
-      <p>Align three matching positions to awaken the gate</p>
+      <h1 class="flicker">THE MISSING GODORB</h1>
+      <p style="text-align:center; color:#ff6666">Align three matching positions to awaken the gate</p>
       <div id="deck"></div>
-      <button onclick="drawCards()">DRAW CARDS</button>
+      <button id="drawBtn">DRAW CARDS</button>
       <div id="gameStatus" style="margin-top:1em;"></div>
       <div class="binary-glitch" id="binaryMessage" style="display:none;">
         <div class="binary-glitch-text">01010100 01101000 01100101 00100000 01001101 01101001 01110011 01110011 01101001 01101110 01100111 00100000 01010011 01110101 01101110 00100000 01001001 01101110 01100110 01100101 01110010 01101001 01101111 01110010 01101001 01110100 01111001</div>
-        <div style="margin-top:10px;font-size:0.8em;">[The Missing Sun Inferiority]</div>
+        <div style="margin-top:10px;font-size:0.8em; color:#ff6666;">[The Missing Sun Inferiority]</div>
+      </div>
+      
+      <!-- Secret answer form for special combination -->
+      <div class="secret-form" id="secretForm">
+        <h3>ANCIENT KNOWLEDGE REQUIRED</h3>
+        <p style="text-align:center; color:#ff6666; margin-bottom:15px;">Answer the riddles of the ancients to unlock the ruins</p>
+        <input type="text" id="frogAnswer" placeholder="What croaks in the dark, yet brings light?">
+        <input type="text" id="borinquenuelaAnswer" placeholder="What root connects earth to sky?">
+        <input type="text" id="madnessAnswer" placeholder="What dance defies all reason?">
+        <button onclick="checkAncientAnswers()">UNLOCK THE RUINS</button>
+        <div id="answerStatus" style="margin-top:10px; color:#ff6666;"></div>
       </div>
     </div>
-    
-    <!-- Wormhole Transition -->
+
     <div class="wormhole" id="wormhole"></div>
-    
-    <!-- Shadow Gate -->
+
     <div class="shadow-gate" id="shadowGate">
-      <h1 style="color:#f00" class="flicker">SHADOW GATE ONLINE</h1>
-      <p>Secure channel established - encryption active</p>
-      
+      <h1 style="color:#ff6666" class="flicker">SHADOW GATE ONLINE</h1>
+      <p style="text-align:center; color:#ff6666">Secure channel established - encryption active</p>
+
       <div class="message-log" id="messageLog">
-        > System initialized<br>
-        > Waiting for transmission...
+        &gt; System initialized<br>&gt; Waiting for transmission...
       </div>
-      
-      <textarea id="shadowMessage" placeholder="Your whisper through the void..." 
-                style="width:80%; height:100px; background:#000; color:#0f0; border:1px solid #f00; padding:10px; margin-bottom:15px;"></textarea>
-      <div>
-        <button onclick="sendMessage()" style="color:#f00; background:#000; border:1px solid #f00; padding:8px 15px; margin:0 10px; cursor:pointer;">TRANSMIT MESSAGE</button>
-        <button onclick="returnToGame()" style="color:#0f0; background:#000; border:1px solid #0f0; padding:8px 15px; margin:0 10px; cursor:pointer;">RETURN</button>
+
+      <textarea id="shadowMessage" placeholder="Your whisper through the void..." style="width:80%; height:100px; background:#000; color:#ff6666; border:1px solid #440000; padding:10px; margin-bottom:15px;"></textarea>
+      <div style="margin-bottom:12px;">
+        <button onclick="sendMessage()" style="color:#ff6666; background:#000; border:1px solid #440000; padding:8px 15px; margin:0 10px; cursor:pointer;">TRANSMIT MESSAGE</button>
+        <button onclick="returnToGame()" style="color:#ff6666; background:#000; border:1px solid #440000; padding:8px 15px; margin:0 10px; cursor:pointer;">RETURN</button>
       </div>
-      <div id="gateStatus" style="margin-top:1em;"></div>
+
+      <div id="gateStatus" style="margin-top:1em; color:#ff6666;"></div>
+
+      <div id="musicContainer" style="display:none; margin-top:20px; width:90%;">
+        <div class="album-player" id="albumPlayer"></div>
+      </div>
     </div>
   </div>
 
-  <!-- Easter Egg Audio Container -->
-  <div class="audio-easter-egg" id="audioEasterEgg">
-    <div class="name-blocker"></div>
-    <div class="pixel-text" style="margin-bottom:10px;font-size:1.2em;">SYNC DECRYPTED</div>
-    <!-- Audio tracks will be inserted here -->
-    <div class="audio-copyright">LUZLEARNING © 2025</div>
+  <div class="audio-easter-egg" id="audioEasterEgg" aria-hidden="true">
+    <div class="pixel-text" style="margin-bottom:10px;font-size:1.2em; color:#ff6666;">SYNC DECRYPTED</div>
+    <div class="album-player" id="floatingAlbum"></div>
+    <div class="audio-copyright" style="color:#0f0">LUZLEARNING © 2025</div>
+  </div>
+
+  <div class="cinematic-overlay" id="cinematicOverlay" aria-hidden="true">
+    <div class="cinematic-text" id="cinematicText">WHERE DOES THE RABBIT HOLE GO?</div>
   </div>
 
   <script>
-    // Enhanced Symbol Sets with fixed position 0 for specific cards
+    /******************************************************************
+     * Constants and state
+     ******************************************************************/
+    let currentCards = [];
+    let messageLog = [];
+    let drawCount = 0;
+    let audioShown = false;
+    let isPausedForCinematic = false;
+
+    function onReady(fn) {
+      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        setTimeout(fn, 0);
+      } else {
+        document.addEventListener('DOMContentLoaded', fn);
+      }
+    }
+
+    /******************************************************************
+     * Matrix Rain (red letters) - adjusted so there's no red tint
+     ******************************************************************/
+    (function matrixRain() {
+      const canvas = document.getElementById('matrixCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      let columns = [];
+      let fontSize = 18;
+
+      function init() {
+        canvas.width = innerWidth;
+        canvas.height = innerHeight;
+        fontSize = Math.max(14, Math.floor(window.innerWidth / 90));
+        columns = new Array(Math.floor(canvas.width / fontSize)).fill(0).map(() => Math.random() * canvas.height);
+        ctx.font = `${fontSize}px monospace`;
+        ctx.textBaseline = 'top';
+      }
+      window.addEventListener('resize', init);
+      init();
+
+      const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZабвгдеёжзийклмнопрстуфхцчшщъыьэюяαβγδεζηθικλμνξοπρστυφχψωابتثجحخدذرزسشصضطظعغفقكلمنهويةאבגדהוזחטיכלמנסעפצקרשתअआइईउऊएऐओऔकखगघङचछजझञटठडढणतथदधनपफबभमययरלवशषसहあいうえおかきくけこさしすせそたちつてとなにぬねのアイウエオカキクケコサシスセソタチツテトナニヌネノ가나다라마바사아자차카타파하①②③④⑤⑥⑦⑧⑨01!@#$%^&*()[]{}<>?';
+      const chars = charset.split('');
+
+      function draw() {
+        // Slight fade to create trailing effect
+        ctx.fillStyle = 'rgba(0,0,0,0.12)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Red letters are pure and bright
+        ctx.fillStyle = '#ff2b2b';
+        ctx.shadowColor = '#ff2b2b';
+        ctx.shadowBlur = 10;
+        ctx.globalCompositeOperation = 'lighter';
+
+        for (let i = 0; i < columns.length; i++) {
+          const text = chars[Math.floor(Math.random() * chars.length)];
+          const x = i * fontSize;
+          const y = columns[i] * fontSize;
+          ctx.fillText(text, x, y);
+          if (y > canvas.height && Math.random() > 0.975) {
+            columns[i] = 0;
+          } else {
+            columns[i] += 0.5 + Math.random() * 0.9;
+          }
+        }
+        ctx.globalCompositeOperation = 'source-over';
+        requestAnimationFrame(draw);
+      }
+      requestAnimationFrame(draw);
+    })();
+
+    /******************************************************************
+     * Lightning engine: draws bolts on lightningCanvas
+     ******************************************************************/
+    (function LightningEngine() {
+      const canvas = document.getElementById('lightningCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+
+      function resize() {
+        canvas.width = innerWidth;
+        canvas.height = innerHeight;
+      }
+      window.addEventListener('resize', resize);
+      resize();
+
+      function drawBolt(startX, startY, length, options = {}) {
+        const segments = options.segments || 10;
+        const maxOffset = options.maxOffset || 80;
+        const color = options.color || 'rgba(255,80,80,0.95)';
+        const thickness = options.thickness || 3;
+        const points = [{ x:startX, y:startY }];
+        let x = startX, y = startY;
+        for (let i = 1; i <= segments; i++) {
+          const stepY = length / segments;
+          y += stepY;
+          x += (Math.random() - 0.5) * maxOffset * (1 - i/segments);
+          points.push({ x, y });
+        }
+
+        ctx.save();
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = color;
+        ctx.globalCompositeOperation = 'screen';
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 18;
+        ctx.lineWidth = thickness;
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function spawnBoltOnce() {
+        const x = Math.random() * canvas.width;
+        drawBolt(x, 0, canvas.height * (0.55 + Math.random()*0.3), { segments: 10 + Math.floor(Math.random()*8), maxOffset: 80, thickness: 2 + Math.random()*2 });
+        // quick fade after a while to clear
+        setTimeout(() => {
+          ctx.fillStyle = 'rgba(0,0,0,0.35)';
+          ctx.fillRect(0,0,canvas.width,canvas.height);
+        }, 300);
+      }
+
+      window.Lightning = {
+        spawnBoltOnce,
+        spawnSequence: function(count = 6, pace = 300) {
+          let i = 0;
+          const t = setInterval(() => {
+            spawnBoltOnce();
+            i++;
+            if (i >= count) clearInterval(t);
+          }, pace + Math.random() * 120);
+        },
+        clear: function() { ctx.clearRect(0,0,canvas.width,canvas.height); }
+      };
+    })();
+
+    /******************************************************************
+     * WebAudio: deep rumble + jolt (synthesized). No external files.
+     ******************************************************************/
+    const AudioEngine = (function(){
+      let audioCtx = null;
+      function ensureCtx() {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        return audioCtx;
+      }
+
+      function deepRumble(durationMs = 2200) {
+        try {
+          const ctx = ensureCtx();
+          const now = ctx.currentTime;
+          const duration = durationMs / 1000;
+
+          // noise burst (lowpass)
+          const bufferSize = ctx.sampleRate * Math.min(1.5, duration);
+          const buffer = ctx.createBuffer(1, bufferSize | 0, ctx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            data[i] = (Math.random()*2 - 1) * (1 - i / bufferSize) * 0.6;
+          }
+          const noiseSrc = ctx.createBufferSource();
+          noiseSrc.buffer = buffer;
+
+          const noiseFilter = ctx.createBiquadFilter();
+          noiseFilter.type = 'lowpass';
+          noiseFilter.frequency.setValueAtTime(220, now);
+
+          const noiseGain = ctx.createGain();
+          noiseGain.gain.setValueAtTime(0.0001, now);
+          noiseGain.gain.linearRampToValueAtTime(0.5, now + 0.12);
+          noiseGain.gain.linearRampToValueAtTime(0.0, now + duration);
+
+          // sine oscillator for sub-bass
+          const osc = ctx.createOscillator();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(40, now);
+          osc.frequency.linearRampToValueAtTime(48, now + duration);
+
+          const oscGain = ctx.createGain();
+          oscGain.gain.setValueAtTime(0.0001, now);
+          oscGain.gain.linearRampToValueAtTime(0.9, now + 0.15);
+          oscGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+          noiseSrc.connect(noiseFilter);
+          noiseFilter.connect(noiseGain);
+          noiseGain.connect(ctx.destination);
+          osc.connect(oscGain);
+          oscGain.connect(ctx.destination);
+
+          noiseSrc.start(now);
+          osc.start(now);
+          noiseSrc.stop(now + duration);
+          osc.stop(now + duration + 0.02);
+        } catch(err) {
+          console.warn('AudioEngine deepRumble error', err);
+        }
+      }
+
+      function jolt(durationMs = 350) {
+        try {
+          const ctx = ensureCtx();
+          const now = ctx.currentTime;
+          const osc = ctx.createOscillator();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(200, now);
+          osc.frequency.exponentialRampToValueAtTime(60, now + durationMs / 1000);
+
+          const gain = ctx.createGain();
+          gain.gain.setValueAtTime(0.0001, now);
+          gain.gain.linearRampToValueAtTime(0.6, now + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + durationMs / 1000);
+
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(1200, now);
+
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(now);
+          osc.stop(now + durationMs/1000 + 0.02);
+        } catch(err) {
+          console.warn('AudioEngine jolt error', err);
+        }
+      }
+
+      return { deepRumble, jolt };
+    })();
+
+    /******************************************************************
+     * Cinematic orchestration: play sounds, lightning, pixel overlay
+     ******************************************************************/
+    function flashLightningForDraw(drawNumber) {
+      const pixel = document.getElementById('pixelOverlay');
+      if (!pixel) return;
+      if (drawNumber === 3) {
+        if (window.Lightning) Lightning.spawnBoltOnce();
+        AudioEngine.jolt(450);
+        pixel.classList.add('active');
+        setTimeout(() => pixel.classList.remove('active'), 220);
+      } else if (drawNumber === 19) {
+        if (window.Lightning) window.Lightning.spawnSequence(8, 320);
+        AudioEngine.deepRumble(3000);
+        pixel.classList.add('active');
+        setTimeout(() => pixel.classList.remove('active'), 3200);
+      } else {
+        AudioEngine.jolt(300);
+        if (window.Lightning) Lightning.spawnBoltOnce();
+      }
+    }
+
+    async function showCinematicThen(drawNumber = 3, callback) {
+      if (isPausedForCinematic) return;
+      isPausedForCinematic = true;
+      const drawBtn = document.getElementById('drawBtn');
+      drawBtn.disabled = true;
+      drawBtn.style.opacity = '0.5';
+      const overlay = document.getElementById('cinematicOverlay');
+      
+      // Change text for 19th draw
+      if (drawNumber === 19) {
+        document.getElementById('cinematicText').textContent = "ONLY ONE WAY TO KNOW";
+      } else {
+        document.getElementById('cinematicText').textContent = "WHERE DOES THE RABBIT HOLE GO?";
+      }
+      
+      overlay.classList.add('show');
+
+      setTimeout(() => { flashLightningForDraw(drawNumber); }, 60);
+
+      if (drawNumber === 3) {
+        await new Promise(r => setTimeout(r, 1000));
+      } else if (drawNumber === 19) {
+        await new Promise(r => setTimeout(r, 3400));
+      } else {
+        await new Promise(r => setTimeout(r, 1600));
+      }
+
+      // quick pixel effect
+      document.getElementById('pixelOverlay').classList.add('active');
+      setTimeout(() => document.getElementById('pixelOverlay').classList.remove('active'), 280);
+
+      overlay.classList.remove('show');
+      drawBtn.disabled = false;
+      drawBtn.style.opacity = '1';
+      isPausedForCinematic = false;
+      if (typeof callback === 'function') callback();
+    }
+
+    /******************************************************************
+     * UI: audio player persistent (only one) - uses iframe on trigger
+     ******************************************************************/
+    function showAudioPlayerPersist() {
+      if (audioShown) return;
+      audioShown = true;
+      // Keep a single floating player region. You can replace iframe with your own embed.
+      const iframeHTML = `<iframe src="https://audius.co/embed/album/ZpVqWAy?flavor=card" width="100%" height="280" allow="encrypted-media" style="border: none;"></iframe>`;
+      const floating = document.getElementById('floatingAlbum');
+      if (floating) {
+        floating.innerHTML = iframeHTML;
+        document.getElementById('audioEasterEgg').classList.add('show');
+      }
+    }
+
+    /******************************************************************
+     * Symbols and draw / flip / alignment logic
+     ******************************************************************/
     const symbols = {
       bugs: [
-        { emoji: "🐉", name: "Dragonfly", desc: "Seer through dimensional veils. It watches you through insane frames.", pos: 0 },
-        { emoji: "🦂", name: "Centipede", desc: "Each step ignites an ember. Count the legs - there's always one more than you remember.", pos: Math.floor(Math.random() * 9) },
-        { emoji: "🦗", name: "Cicada", desc: "Knows when to emerge. The buzzing is coming from inside the earth.", pos: Math.floor(Math.random() * 9) },
-        { emoji: "✨", name: "Fireflies", desc: "Markers of lost thoughts. Light'in the paths where gods fought.", pos: Math.floor(Math.random() * 9) },
-        { emoji: "🌜", name: "Borinkenuela", desc: "Rooted in forgotten treaties. Its pollen carries memories not defeated.", pos: Math.floor(Math.random() * 9) },
-        { emoji: "🐛", name: "Gorgojo", desc: "Gnaws through time. You can hear it chewing at the walls of grime.", pos: Math.floor(Math.random() * 9) },
-        { emoji: "🦋", name: "HH Moth", desc: "Hums in ultraviolet. Its wings show patterns only visible through the side of your eyelid.", pos: Math.floor(Math.random() * 9) },
-        { emoji: "🦟", name: "Mosquito", desc: "Drinks poisoned memories. The itch remains long after the pain refranes.", pos: Math.floor(Math.random() * 9) },
-        { emoji: "🕷️", name: "Spidermom", desc: "Weaver of fate. You've been in her web since your birthdate.", pos: Math.floor(Math.random() * 9) }
+        { emoji: "🐉", name: "Dragonfly", desc: "Seer through dimensional veils.", pos: 0 },
+        { emoji: "🦂", name: "Centipede", desc: "Each step ignites an ember.", pos: () => Math.floor(Math.random() * 9) },
+        { emoji: "🦗", name: "Cicada", desc: "Knows when to emerge.", pos: () => Math.floor(Math.random() * 9) },
+        { emoji: "✨", name: "Fireflies", desc: "Markers of lost thoughts.", pos: () => Math.floor(Math.random() * 9) },
+        { emoji: "🌜", name: "Borinquenuela", desc: "Rooted in forgotten treaties.", pos: () => Math.floor(Math.random() * 9) },
+        { emoji: "🐛", name: "Gorgojo", desc: "Gnaws through time.", pos: () => Math.floor(Math.random() * 9) },
+        { emoji: "🦋", name: "HH Moth", desc: "Hums in ultraviolet.", pos: () => Math.floor(Math.random() * 9) },
+        { emoji: "🦟", name: "Mosquito", desc: "Drinks poisoned memories.", pos: () => Math.floor(Math.random() * 9) },
+        { emoji: "🕷️", name: "Spidermom", desc: "Weaver of fate.", pos: () => Math.floor(Math.random() * 9) }
       ],
       animals: [
-        { emoji: "🦇", name: "Bat", desc: "Navigates by silent echoes. It's using your heartbeat to find the hueco.", pos: 0 },
-        { emoji: "🐅", name: "Tiger", desc: "Protector of sacred geometry. Its terror conveys beautifully.", pos: Math.floor(Math.random() * 9) },
-        { emoji: "🐒", name: "Monkey", desc: "Mimics forgotten gods. Its laughter comes from too many mouths.", pos: Math.floor(Math.random() * 9) },
-        { emoji: "🐀", name: "Rat", desc: "Builds kingdoms from the forgotten. You'll find its treasures every option .", pos: Math.floor(Math.random() * 9) },
-        { emoji: "🐸", name: "Frog", desc: "Sings boundless hymns. The song gets louder and never ends.", pos: Math.floor(Math.random() * 9) },
-        { emoji: "🐢", name: "Turtle", desc: "Carries cosmic memory. The patterns on its shell keep changing when you tell.", pos: Math.floor(Math.random() * 9) },
-        { emoji: "🐟", name: "Fish", desc: "Swims the dream currents. It gleams in the dark to illuminate all deterents, .", pos: Math.floor(Math.random() * 9) },
-        { emoji: "🐍", name: "Snake", desc: "Sheds infinite skins. Especially the one you in.", pos: Math.floor(Math.random() * 9) },
-        { emoji: "🦅", name: "Crow", desc: "Catalogs unfinished stories. Vison's that will never bore me.", pos: Math.floor(Math.random() * 9) },
+        { emoji: "🦇", name: "Bat", desc: "Navigates by silent echoes.", pos: 0 },
+        { emoji: "🐅", name: "Tiger", desc: "Protector of sacred geometry.", pos: () => Math.floor(Math.random() * 9) },
+        { emoji: "🐒", name: "Monkey", desc: "Mimics forgotten gods.", pos: () => Math.floor(Math.random() * 9) },
+        { emoji: "🐀", name: "Rat", desc: "Builds kingdoms from the forgotten.", pos: () => Math.floor(Math.random() * 9) },
+        { emoji: "🐸", name: "Frog", desc: "Sings boundless hymns.", pos: () => Math.floor(Math.random() * 9) },
+        { emoji: "🐢", name: "Turtle", desc: "Carries cosmic memory.", pos: () => Math.floor(Math.random() * 9) },
+        { emoji: "🐟", name: "Fish", desc: "Swims the dream currents.", pos: () => Math.floor(Math.random() * 9) },
+        { emoji: "🐍", name: "Snake", desc: "Sheds infinite skins.", pos: () => Math.floor(Math.random() * 9) },
+        { emoji: "🦅", name: "Crow", desc: "Catalogs unfinished stories.", pos: () => Math.floor(Math.random() * 9) }
       ],
       emotions: [
-        { emoji: "🧧", name: "Grief", desc: "Waters new growth. The roots are growing the consoul.", pos: Math.floor(Math.random() * 9) },
-        { emoji: "👁️", name: "Insight", desc: "Pierces through veils. It does not care what prevails.", pos: Math.floor(Math.random() * 9) },
-        { emoji: "🗡️", name: "Invoke", desc: "Awakens dormant forces. They've been waiting for you to set the orbit.", pos: Math.floor(Math.random() * 9) },
-        { emoji: "🔑", name: "Conjure", desc: "Manifests from none. The key in the place where we begun.", pos: Math.floor(Math.random() * 9) },
-        { emoji: "🎵", name: "Resonance", desc: "The beat of the drum. Liberator of a quite slum.", pos: 0 },
-        { emoji: "🎭", name: "Hidden", desc: "Wears necessary masks. What's underneath? All you have to do is ask.", pos: Math.floor(Math.random() * 9) },
-        { emoji: "🧠", name: "Intuition", desc: "Knows without saying. It's been whispering an old cadence.", pos: Math.floor(Math.random() * 9) },
-        { emoji: "🌪️", name: "Madness", desc: "Dances on the edge. The brave are who is left.", pos: Math.floor(Math.random() * 9) },
-        { emoji: "⚡", name: "Potential", desc: "Quivers before action. Becareful for all distractions.", pos: Math.floor(Math.random() * 9) }
+        { emoji: "🧧", name: "Grief", desc: "Waters new growth.", pos: () => Math.floor(Math.random() * 9) },
+        { emoji: "👁️", name: "Insight", desc: "Pierces through veils.", pos: () => Math.floor(Math.random() * 9) },
+        { emoji: "🗡️", name: "Invoke", desc: "Awakens dormant forces.", pos: () => Math.floor(Math.random() * 9) },
+        { emoji: "🔑", name: "Conjure", desc: "Manifests from none.", pos: () => Math.floor(Math.random() * 9) },
+        { emoji: "🎵", name: "Resonance", desc: "The beat of the drum.", pos: 0 },
+        { emoji: "🎭", name: "Hidden", desc: "Wears necessary masks.", pos: () => Math.floor(Math.random() * 9) },
+        { emoji: "🧠", name: "Intuition", desc: "Knows without saying.", pos: () => Math.floor(Math.random() * 9) },
+        { emoji: "🌪️", name: "Madness", desc: "Dances on the edge.", pos: () => Math.floor(Math.random() * 9) },
+        { emoji: "⚡", name: "Potential", desc: "Quivers before action.", pos: () => Math.floor(Math.random() * 9) }
       ]
     };
 
-    // Audio track iframes - your custom tracks
-    const audioTracks = [
-      '<iframe src=https://audius.co/embed/track/z9Nxrlp?flavor=tiny width="100%" height="24" allowTransparency="true" allow="encrypted-media" style="border: none;"></iframe>',
-      '<iframe src=https://audius.co/embed/track/gWyb9Wp?flavor=tiny width="100%" height="24" allowTransparency="true" allow="encrypted-media" style="border: none;"></iframe>',
-      '<iframe src=https://audius.co/embed/track/xkqkjZ7?flavor=tiny width="100%" height="24" allowTransparency="true" allow="encrypted-media" style="border: none;"></iframe>',
-      '<iframe src="https://audius.co/embed/track/g54l20p?flavor=tiny" width="100%" height="24" allowTransparency="true" allow="encrypted-media" style="border: none;"></iframe>',
-      '<iframe src="https://audius.co/embed/track/Eqk6goM?flavor=tiny" width="100%" height="24" allowTransparency="true" allow="encrypted-media" style="border: none;"></iframe>',
-      '<iframe src="https://audius.co/embed/track/W0O90zZ?flavor=tiny" width="100%" height="24" allowTransparency="true" allow="encrypted-media" style="border: none;"></iframe>',
-      '<iframe src="https://audius.co/embed/track/jbloORM?flavor=tiny" width="100%" height="24" allowTransparency="true" allow="encrypted-media" style="border: none;"></iframe>',
-      '<iframe src="https://audius.co/embed/track/Y6Vqavp?flavor=tiny" width="100%" height="24" allowTransparency="true" allow="encrypted-media" style="border: none;"></iframe>',
-      '<iframe src="https://audius.co/embed/track/dK28K3y?flavor=tiny" width="100%" height="24" allowTransparency="true" allow="encrypted-media" style="border: none;"></iframe>',
-      '<iframe src="https://audius.co/embed/track/Nxpbvqx?flavor=tiny" width="100%" height="24" allowTransparency="true" allow="encrypted-media" style="border: none;"></iframe>',
-      '<iframe src="https://audius.co/embed/track/ExbE2A4?flavor=tiny" width="100%" height="24" allowTransparency="true" allow="encrypted-media" style="border: none;"></iframe>'
-    ];
-
-    let currentCards = [];
-    let messageLog = [];
-    
-    // Calculate probability of getting the Easter egg
-    function calculateProbability() {
-      return "~0.045% (1 in 2200) per draw";
+    function resolvePos(item) {
+      return (typeof item.pos === 'function') ? item.pos() : item.pos;
     }
-    
-    // Draw Cards
-    function drawCards() {
+
+    document.getElementById('drawBtn').addEventListener('click', () => {
+      if (isPausedForCinematic) return;
+      const nextDraw = drawCount + 1;
+      if (nextDraw === 3 || nextDraw === 19) {
+        showCinematicThen(nextDraw, () => doDraw());
+      } else {
+        doDraw();
+      }
+    });
+
+    function doDraw() {
       const deck = document.getElementById('deck');
       deck.innerHTML = '';
       currentCards = [];
       document.getElementById('gameStatus').textContent = '';
-      document.getElementById('audioEasterEgg').classList.remove('show');
-      document.getElementById('audioEasterEgg').innerHTML = '';
       document.getElementById('binaryMessage').style.display = 'none';
       document.getElementById('pixelOverlay').classList.remove('active');
-      document.getElementById('secretMessage').style.display = 'none';
-      
-      // Get one random card from each category
-      const bug = symbols.bugs[Math.floor(Math.random() * symbols.bugs.length)];
-      const animal = symbols.animals[Math.floor(Math.random() * symbols.animals.length)];
-      const emotion = symbols.emotions[Math.floor(Math.random() * symbols.emotions.length)];
-      
-      currentCards = [
-        { 
-          ...bug,
-          type: 'bug', 
-          revealed: false
-        },
-        { 
-          ...animal,
-          type: 'animal', 
-          revealed: false
-        },
-        { 
-          ...emotion,
-          type: 'emotion', 
-          revealed: false
-        }
-      ];
-      
-      // Create cards
+      document.getElementById('secretForm').style.display = 'none';
+      drawCount++;
+      document.getElementById('drawCounter').textContent = `DRAWS: ${drawCount}`;
+      console.log(`Draw #${drawCount}`);
+
+      let bug, animal, emotion;
+      if (drawCount === 3) {
+        bug = symbols.bugs.find(c => c.name === "Dragonfly") || symbols.bugs[0];
+        animal = symbols.animals.find(c => c.name === "Bat") || symbols.animals[0];
+        emotion = symbols.emotions.find(c => c.name === "Resonance") || symbols.emotions[0];
+      } else {
+        bug = symbols.bugs[Math.floor(Math.random() * symbols.bugs.length)];
+        animal = symbols.animals[Math.floor(Math.random() * symbols.animals.length)];
+        emotion = symbols.emotions[Math.floor(Math.random() * symbols.emotions.length)];
+      }
+
+      const cbug = { ...bug, pos: resolvePos(bug), type: 'bug', revealed: false };
+      const canimal = { ...animal, pos: resolvePos(animal), type: 'animal', revealed: false };
+      const cemotion = { ...emotion, pos: resolvePos(emotion), type: 'emotion', revealed: false };
+      currentCards = [cbug, canimal, cemotion];
+
       currentCards.forEach((card, index) => {
         const cardEl = document.createElement('div');
         cardEl.className = 'card';
@@ -649,155 +646,113 @@
           <div class="card-inner">
             <div class="card-face card-front">
               <div style="font-size:3em;">${card.emoji}</div>
-              <div style="font-size:0.8em; margin-top:10px; color:#333;">${card.name}</div>
+              <div style="font-size:0.8em; margin-top:10px; color:#ddd;">${card.name}</div>
             </div>
             <div class="card-face card-back">
               <div style="font-size:2em;">${card.emoji}</div>
               <div>${card.name}</div>
-              <div style="font-size:0.7em; margin-top:10px;">${card.desc}</div>
-              <div style="margin-top:15px;font-size:0.6em; color:#000;">Pos: ${card.pos}</div>
+              <div style="font-size:0.7em; margin-top:10px; color:#ccc;">${card.desc}</div>
+              <div style="margin-top:15px;font-size:0.6em; color:#999;">Pos: ${card.pos}</div>
             </div>
           </div>
         `;
         cardEl.onclick = () => flipCard(cardEl, index);
         deck.appendChild(cardEl);
       });
+
+      if (drawCount === 3) {
+        setTimeout(() => {
+          const cards = document.querySelectorAll('.card');
+          cards.forEach((card, idx) => {
+            setTimeout(() => flipCard(card, idx), 500 * (idx + 1));
+          });
+        }, 900);
+        setTimeout(showAudioPlayerPersist, 1000);
+      }
     }
-    
-    // Flip Card
+
     function flipCard(cardEl, index) {
       if (!cardEl.classList.contains('flipped')) {
         cardEl.classList.add('flipped');
         currentCards[index].revealed = true;
-        
-        // Add VHS distortion effect
-        cardEl.classList.add('vhs-effect');
-        setTimeout(() => {
-          cardEl.classList.remove('vhs-effect');
-        }, 300);
-        
+        setTimeout(() => cardEl.classList.remove('vhs-effect'), 300);
         checkAlignment();
       }
     }
-    
-    // Check Alignment
+
     function checkAlignment() {
       const flippedCards = document.querySelectorAll('.flipped');
       if (flippedCards.length === 3) {
-        // Check if all positions match
-        const positions = currentCards.map(card => card.pos);
-        const allSame = positions.every(pos => pos === positions[0]);
+        const positions = currentCards.map(c => c.pos);
+        const allSame = positions.every(p => p === positions[0]);
+        const hasBat = currentCards.some(c => c.name === "Bat");
+        const hasDragonfly = currentCards.some(c => c.name === "Dragonfly");
+        const hasResonance = currentCards.some(c => c.name === "Resonance");
+        const isEasterEgg = (hasBat && hasDragonfly && hasResonance && allSame && positions[0] === 0);
         
-        // Check if we have the specific combination for the Easter egg
-        const hasBat = currentCards.some(card => card.name === "Bat");
-        const hasDragonfly = currentCards.some(card => card.name === "Dragonfly");
-        const hasResonance = currentCards.some(card => card.name === "Resonance");
-        const isEasterEgg = hasBat && hasDragonfly && hasResonance && allSame && positions[0] === 0;
+        // Check for the special combination (Frog, Borinquenuela, Madness)
+        const hasFrog = currentCards.some(c => c.name === "Frog");
+        const hasBorinquenuela = currentCards.some(c => c.name === "Borinquenuela");
+        const hasMadness = currentCards.some(c => c.name === "Madness");
+        const isSpecialCombination = hasFrog && hasBorinquenuela && hasMadness && allSame;
         
         if (allSame) {
-          if (isEasterEgg) {
-            // Show the audio Easter egg
-            const audioContainer = document.getElementById('audioEasterEgg');
-            audioContainer.innerHTML = '';
-            
-            // Add your custom tracks with numbering
-            audioTracks.forEach((track, index) => {
-              const trackDiv = document.createElement('div');
-              trackDiv.className = 'audio-track';
-              trackDiv.innerHTML = `
-                <span class="track-number">${index.toString().padStart(2, '0')}</span>
-                ${track}
-              `;
-              audioContainer.appendChild(trackDiv);
-            });
-            
-            // Add the copyright notice
-            const copyrightDiv = document.createElement('div');
-            copyrightDiv.className = 'audio-copyright';
-            copyrightDiv.textContent = 'LUZLEARNING © 2025';
-            audioContainer.appendChild(copyrightDiv);
-            
-            audioContainer.classList.add('show');
-            
-            // Show binary message and pixel overlay
+          if (isSpecialCombination) {
+            // Show the secret form instead of the shadow gate
+            document.getElementById('secretForm').style.display = 'block';
+            document.getElementById('gameStatus').innerHTML = `<span style="color:#ff6666">ANCIENT PATTERN DETECTED</span><br><span style="font-size:0.8em">Answer the riddles to unlock the ruins...</span>`;
+          } else if (isEasterEgg) {
+            document.getElementById('audioEasterEgg').classList.add('show');
             document.getElementById('binaryMessage').style.display = 'block';
             document.getElementById('pixelOverlay').classList.add('active');
-            
-            // Show secret message
-            document.getElementById('secretMessage').style.display = 'block';
-            
-            document.getElementById('gameStatus').innerHTML = 
-              `<span style="color:#0f0">COSMIC ALIGNMENT ACHIEVED</span><br>
-              <span style="font-size:0.8em">The hidden frequencies are revealed...</span><br>
-              <span style="font-size:0.7em;color:#888">Probability: ${calculateProbability()}</span>`;
+            document.getElementById('gameStatus').innerHTML = `<span style="color:#ff6666">COSMIC ALIGNMENT ACHIEVED</span><br><span style="font-size:0.8em">The hidden frequencies are revealed...</span><br><span style="font-size:0.7em;color:#888">Probability: ~5.26% (1 in 19)</span>`;
+            setTimeout(activateWormhole, 2000);
           } else {
-            document.getElementById('gameStatus').innerHTML = 
-              '<span style="color:#0f0">ALIGNMENT DETECTED</span><br>' +
-              '<span style="font-size:0.8em">Gateway coordinates confirmed...</span>';
+            document.getElementById('gameStatus').innerHTML = '<span style="color:#ff6666">ALIGNMENT DETECTED</span><br><span style="font-size:0.8em">Gateway coordinates confirmed...</span>';
+            setTimeout(activateWormhole, 2000);
           }
-          setTimeout(activateWormhole, 2000);
         } else {
-          document.getElementById('gameStatus').innerHTML = 
-            '<span style="color:#f00">NO ALIGNMENT</span><br>' +
-            '<span style="font-size:0.8em">The void remains silent...</span>';
+          document.getElementById('gameStatus').innerHTML = '<span style="color:#ff6666">NO ALIGNMENT</span><br><span style="font-size:0.8em">The void remains silent...</span>';
         }
       }
     }
-    
-    // Wormhole Transition
+
     function activateWormhole() {
       const wormhole = document.getElementById('wormhole');
       const game = document.getElementById('godorbGame');
-      
-      // Add messages to the shadow gate log
-      messageLog = currentCards.map(card => 
-        `> [${card.type.toUpperCase()}] ${card.name}: ${card.desc} (Pos:${card.pos})`
-      );
-      messageLog.unshift("> Gateway established. Transmission begins:");
+      messageLog = currentCards.map(card => `> [${card.type.toUpperCase()}] ${card.name}: ${card.desc} (Pos:${card.pos})`);
+      messageLog.unshift('> Gateway established. Transmission begins:');
       document.getElementById('messageLog').innerHTML = messageLog.join('<br>');
-      
-      // Animate wormhole
       wormhole.style.animation = 'wormhole-expand 3.5s forwards';
-      game.style.filter = 'blur(8px) brightness(0.5)';
-      
-      // After wormhole completes, reveal gate
+
+      // only blur UI but do not darken — keep background bright so red letters show clearly
+      game.style.filter = 'blur(6px)';
+
       setTimeout(() => {
         document.getElementById('shadowGate').style.animation = 'gate-enter 2s forwards';
         game.style.display = 'none';
       }, 3500);
     }
-    
-    // Return to Game
+
     function returnToGame() {
       const game = document.getElementById('godorbGame');
       const gate = document.getElementById('shadowGate');
-      
       gate.style.animation = '';
       gate.style.left = '100%';
       game.style.display = 'flex';
-      setTimeout(() => {
-        game.style.filter = 'none';
-      }, 100);
-      
-      // Reset game
-      drawCards();
+      setTimeout(() => { game.style.filter = 'none'; }, 100);
+      doDraw();
     }
-    
-    // Message Sending
+
     function sendMessage() {
       const message = document.getElementById('shadowMessage').value.trim();
       const status = document.getElementById('gateStatus');
       const log = document.getElementById('messageLog');
-      
       if (message) {
-        // Add message to log with timestamp
         const timestamp = new Date().toLocaleTimeString();
         messageLog.push(`> [${timestamp}] USER: ${message}`);
-        
-        // Simulate response after delay
         log.innerHTML = messageLog.join('<br>');
         log.scrollTop = log.scrollHeight;
-        
         setTimeout(() => {
           const responses = [
             "> SYSTEM: Message received. They're listening.",
@@ -813,18 +768,73 @@
           log.innerHTML = messageLog.join('<br>');
           log.scrollTop = log.scrollHeight;
         }, 1500);
-        
         document.getElementById('shadowMessage').value = '';
-        status.innerHTML = '<span style="color:#0f0">Message transmitted into the void...</span>';
+        status.innerHTML = '<span style="color:#ff6666">Message transmitted into the void...</span>';
       } else {
-        status.innerHTML = '<span style="color:#f00">The void whispers nothing...</span>';
+        status.innerHTML = '<span style="color:#ff6666">The void whispers nothing...</span>';
       }
     }
-    
-    // Initialize
-    drawCards();
+
+    /******************************************************************
+     * Secret answer checking for special combination
+     ******************************************************************/
+    function checkAncientAnswers() {
+      const frogAnswer = document.getElementById('frogAnswer').value.trim().toLowerCase();
+      const borinquenuelaAnswer = document.getElementById('borinquenuelaAnswer').value.trim().toLowerCase();
+      const madnessAnswer = document.getElementById('madnessAnswer').value.trim().toLowerCase();
+      const status = document.getElementById('answerStatus');
+      
+      // Check if answers are correct (you can customize these)
+      const correctFrog = frogAnswer.includes('frog') || frogAnswer.includes('amphibian') || frogAnswer.includes('croak');
+      const correctBorinquenuela = borinquenuelaAnswer.includes('root') || borinquenuelaAnswer.includes('plant') || borinquenuelaAnswer.includes('earth');
+      const correctMadness = madnessAnswer.includes('dance') || madnessAnswer.includes('chaos') || madnessAnswer.includes('edge');
+      
+      if (correctFrog && correctBorinquenuela && correctMadness) {
+        status.innerHTML = '<span style="color:#0f0">✅ ANSWERS ACCEPTED! THE RUINS ARE OPENING...</span>';
+        // Trigger cinematic effect
+        showCinematicThen(19, () => {
+          // Create a download link for the secret PDF
+          const link = document.createElement('a');
+          link.href = 'ancient_ruins.pdf'; // Replace with your actual PDF file path
+          link.download = 'ancient_ruins_secrets.pdf';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          status.innerHTML = '<span style="color:#0f0">✅ SECRETS DOWNLOADED! THE ANCIENT RUINS ARE YOURS TO EXPLORE.</span>';
+        });
+      } else {
+        status.innerHTML = '<span style="color:#ff6666">❌ ANSWERS REJECTED! THE RUINS REMAIN SEALED.</span>';
+        // Add some visual feedback for wrong answers
+        document.getElementById('pixelOverlay').classList.add('active');
+        setTimeout(() => document.getElementById('pixelOverlay').classList.remove('active'), 500);
+        
+        if (window.Lightning) Lightning.spawnBoltOnce();
+        AudioEngine.jolt(300);
+      }
+    }
+
+    // expose for inline onclick handlers (already used in markup)
+    window.sendMessage = sendMessage;
+    window.returnToGame = returnToGame;
+    window.checkAncientAnswers = checkAncientAnswers;
+
+    /******************************************************************
+     * Init after DOM ready
+     ******************************************************************/
+    onReady(() => {
+      doDraw();
+    });
   </script>
 </body>
-
 </html>
 
+ 
+    
+
+    
+  
+
+
+  
+    
