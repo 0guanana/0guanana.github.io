@@ -6,100 +6,47 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
     html,body { height:100%; margin:0; padding:0; }
-    /* Keep UI readable (light text on dark bg) but remove blanket red tint */
     body {
-      background:
-        repeating-conic-gradient(#000 0% 25%, #0b0b0b 0% 50%)
-        0% 0% / 40px 40px;
-      color:#e6e6e6; /* general UI text */
-      font-family:'Courier New',monospace;
-      overflow:hidden;
-      height:100vh;
-      animation:glitch-bg 10s infinite linear;
-      position:relative;
+      background: repeating-conic-gradient(#000 0% 25%, #0b0b0b 0% 50%) 0% 0% / 40px 40px;
+      color:#e6e6e6; font-family:'Courier New',monospace;
+      overflow:hidden; height:100vh; animation:glitch-bg 10s infinite linear; position:relative;
     }
     .copyright {
-      position:fixed;
-      bottom:10px;
-      left:0;
-      width:100%;
-      text-align:center;
-      font-size:0.8em;
-      color:#0f0;
-      opacity:0.9;
-      z-index:100;
-      pointer-events:none;
-      font-family:'Courier New',monospace;
+      position:fixed; bottom:10px; left:0; width:100%; text-align:center; font-size:0.8em; color:#0f0; opacity:0.9; z-index:100; pointer-events:none;
     }
 
-    /* MATRIX canvas: make letters vivid red, no overlay tint */
-    #matrixCanvas {
-      position:fixed;
-      top:0; left:0;
-      width:100%; height:100%;
-      z-index:0;
-      pointer-events:none;
-      opacity:1;                /* fully visible */
-      mix-blend-mode:normal;   /* avoid tinting everything */
-      background:transparent;
-    }
-
-    #lightningCanvas {
-      position:fixed;
-      top:0; left:0;
-      width:100%; height:100%;
-      z-index:10000;
-      pointer-events:none;
-      mix-blend-mode:screen;
-    }
+    /* Canvas and overlays */
+    #matrixCanvas, #lightningCanvas { position:fixed; top:0; left:0; width:100%; height:100%; }
+    #matrixCanvas { z-index:0; pointer-events:none; mix-blend-mode:normal; }
+    #lightningCanvas { z-index:10000; pointer-events:none; mix-blend-mode:screen; }
 
     #gameContainer { position:relative; width:100%; height:100%; z-index:2; }
-    .godorb-interface {
-      position:absolute; width:100%; height:100%; padding:1em; box-sizing:border-box;
-      transition:filter 1.5s; display:flex; flex-direction:column; align-items:center;
-      z-index:3;
-    }
+    .godorb-interface { position:absolute; width:100%; height:100%; padding:1em; box-sizing:border-box; transition:filter 1.5s; display:flex; flex-direction:column; align-items:center; z-index:3; }
     h1.flicker { margin:0; text-align:center; font-size:2.2rem; color:#ff4444; }
-    .card {
-      display:inline-block; width:250px; height:350px; margin:15px; perspective:1000px; cursor:pointer;
-      position:relative; overflow:hidden; transition: transform 0.3s; z-index:3;
-    }
+
+    /* Cards */
+    .card { display:inline-block; width:250px; height:350px; margin:15px; perspective:1000px; cursor:pointer; position:relative; overflow:hidden; transition: transform 0.3s; z-index:3; }
     .card:hover { transform: translateY(-5px) scale(1.02); }
     .card-inner { position:relative; width:100%; height:100%; transition: transform 1s; transform-style:preserve-3d; }
     .card.flipped .card-inner { transform:rotateY(180deg); }
     .card-face { position:absolute; width:100%; height:100%; backface-visibility:hidden; display:flex; flex-direction:column; justify-content:center; align-items:center; border-radius:15px; padding:1.5em; box-sizing:border-box; }
-    .card-front {
-      background:linear-gradient(135deg,#2a2a2a 0%,#1f1f1f 100%);
-      border:3px solid #444;
-      box-shadow:0 0 25px rgba(255,255,255,0.03);
-      color:#e6e6e6;
-    }
+    .card-front { background:linear-gradient(135deg,#2a2a2a 0%,#1f1f1f 100%); border:3px solid #444; box-shadow:0 0 25px rgba(255,255,255,0.03); color:#e6e6e6; }
     .card-front div:first-child { font-size:5em !important; margin-bottom:15px; }
     .card-front div:nth-child(2) { font-size:1.2em; margin-top:10px; color:#ddd; }
-    .card-back {
-      background:linear-gradient(135deg,#222 0%,#111 100%);
-      border:3px solid #663300; transform:rotateY(180deg);
-      box-shadow:0 0 25px rgba(255,215,0,0.03);
-      color:#fff;
-    }
+    .card-back { background:linear-gradient(135deg,#222 0%,#111 100%); border:3px solid #663300; transform:rotateY(180deg); box-shadow:0 0 25px rgba(255,215,0,0.03); color:#fff; }
     .card-back div:first-child { font-size:3em !important; margin-bottom:15px; }
     .card-back div:nth-child(2) { font-size:1.3em; font-weight:bold; margin-bottom:10px; }
     .card-back div:nth-child(3) { font-size:0.9em; line-height:1.4; color:#ddd; }
-    .card-back div:nth-child(4) { position:absolute; bottom:15px; font-size:0.8em; opacity:0.7; color:#bbb; }
-    #deck { display:flex; flex-wrap:wrap; justify-content:center; gap:20px; width:90%; max-width:1200px; margin:20px auto; }
-    .wormhole { position:absolute; top:50%; left:50%; width:10px; height:10px; border-radius:50%; background:radial-gradient(circle,#ff4444 0%, rgba(255,0,0,0) 70%); transform:translate(-50%,-50%); opacity:0; pointer-events:none; z-index:4; }
-    .shadow-gate {
-      position:absolute; top:0; left:100%; width:100%; height:100%; padding:2em; box-sizing:border-box;
-      background:repeating-conic-gradient(#000 0% 25%, #0b0b0b 0% 50%) 0% 0% / 40px 40px;
-      border-left:1px solid #400;
-      display:flex; flex-direction:column; align-items:center; overflow-y:auto;
-      z-index:5;
-    }
-    .message-log {
-      width:80%; height:300px; background:#000; border:1px solid #440000; color:#ff6666; padding:10px; margin-bottom:20px; overflow-y:auto; font-family:'Courier New',monospace; font-size:0.9em; position:relative;
-    }
+    .card-back div:nth-child(4) { position:absolute; bottom:15px; font-size:0.8em; opacity:0.9; color:#bbb; }
 
-    /* single floating audio area (kept hidden until triggered) */
+    #deck { display:flex; flex-wrap:wrap; justify-content:center; gap:20px; width:90%; max-width:1200px; margin:20px auto; }
+
+    .wormhole { position:absolute; top:50%; left:50%; width:10px; height:10px; border-radius:50%; background:radial-gradient(circle,#ff4444 0%, rgba(255,0,0,0) 70%); transform:translate(-50%,-50%); opacity:0; pointer-events:none; z-index:4; }
+
+    .shadow-gate { position:absolute; top:0; left:100%; width:100%; height:100%; padding:2em; box-sizing:border-box; background:repeating-conic-gradient(#000 0% 25%, #0b0b0b 0% 50%) 0% 0% / 40px 40px; border-left:1px solid #400; display:flex; flex-direction:column; align-items:center; overflow-y:auto; z-index:5; }
+
+    .message-log { width:80%; height:300px; background:#000; border:1px solid #440000; color:#ff6666; padding:10px; margin-bottom:20px; overflow-y:auto; font-family:'Courier New',monospace; font-size:0.9em; }
+
     .audio-easter-egg { position:fixed; bottom:20px; right:20px; width:320px; background:rgba(0,0,0,0.9); border:1px solid #660000; padding:10px; display:none; flex-direction:column; z-index:20001; box-shadow:0 0 20px rgba(255,0,0,0.08); font-family:'Courier New',monospace; overflow:hidden; color:#ff6666; }
     .audio-easter-egg.show { display:flex; animation:fadeIn 0.9s, vhs-flicker 0.1s infinite; }
     .album-player { width:100%; margin-top:8px; border-top:1px solid rgba(255,0,0,0.06); padding-top:8px; }
@@ -107,73 +54,47 @@
     .pixel-overlay { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:2000; opacity:0; display:none; }
     .pixel-overlay.active { display:block; opacity:0.12; background:linear-gradient(transparent 0%, rgba(0,0,0,0.25) 100%); }
 
-    .nft-gate-panel { width:80%; background:#060600; border:1px solid #440000; padding:12px; margin-top:12px; color:#ff6666; font-family:'Courier New',monospace; }
-    .nft-gate-panel button { border-color:#440000; color:#ff6666; background:#000; }
-
-    .cinematic-overlay {
-      position:fixed; top:0; left:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center;
-      background:rgba(0,0,0,0.6); z-index:10002; pointer-events:none; opacity:0; transition:opacity .25s;
-      mix-blend-mode:normal;
-    }
+    .cinematic-overlay { position:fixed; top:0; left:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.6); z-index:10002; pointer-events:none; opacity:0; transition:opacity .25s; mix-blend-mode:normal; }
     .cinematic-overlay.show { opacity:1; pointer-events:auto; }
-    .cinematic-text {
-      color:#fff; font-family:'Courier New', monospace; font-size:3rem; letter-spacing:4px; text-align:center;
-      text-shadow: 0 0 30px rgba(255,255,255,0.06), 0 0 40px rgba(255,68,68,0.08);
-      transform:rotate(-1deg);
-    }
+    .cinematic-text { color:#fff; font-family:'Courier New', monospace; font-size:3rem; letter-spacing:4px; text-align:center; text-shadow: 0 0 30px rgba(255,255,255,0.06), 0 0 40px rgba(255,68,68,0.08); transform:rotate(-1deg); }
 
-    .control-bar { margin-top:18px; width:80%; max-width:900px; text-align:center; z-index:6; }
     .draw-counter { position:fixed; top:10px; right:10px; background:rgba(0,0,0,0.7); border:1px solid #440000; padding:8px; z-index:6; color:#ff6666; }
+
     .binary-glitch { font-family:'Courier New', monospace; color:#ff6666; text-align:center; margin:20px 0; position:relative; overflow:hidden; z-index:3; }
     .binary-glitch-text { animation:glitch-text 5s infinite linear; }
 
-    /* Secret answer form styles */
-    .secret-form {
-      width: 80%;
-      background: #111;
-      border: 1px solid #440000;
-      padding: 20px;
-      margin-top: 20px;
-      display: none;
-    }
-    .secret-form input {
-      width: 100%;
-      background: #000;
-      color: #ff6666;
-      border: 1px solid #440000;
-      padding: 10px;
-      margin-bottom: 15px;
-      font-family: 'Courier New', monospace;
-    }
-    .secret-form button {
-      width: 100%;
-      background: #000;
-      color: #ff6666;
-      border: 1px solid #440000;
-      padding: 12px;
-      cursor: pointer;
-      font-family: 'Courier New', monospace;
-    }
-    .secret-form h3 {
-      color: #ff6666;
-      text-align: center;
-      margin-bottom: 15px;
-    }
+    .secret-form { width: 80%; background: #111; border: 1px solid #440000; padding: 20px; margin-top: 20px; display: none; }
+    .secret-form input { width: 100%; background: #000; color: #ff6666; border: 1px solid #440000; padding: 10px; margin-bottom: 15px; font-family: 'Courier New', monospace; }
+    .secret-form button { width: 100%; background: #000; color: #ff6666; border: 1px solid #440000; padding: 12px; cursor: pointer; font-family: 'Courier New', monospace; }
+    .secret-form h3 { color: #ff6666; text-align: center; margin-bottom: 15px; }
+
+    /* Ruins page (shown at draw 1000) */
+    #ruinsPage { position:fixed; top:0; left:0; right:0; bottom:0; background:linear-gradient(180deg,#050505,#001); display:none; z-index:10003; color:#fff; align-items:center; justify-content:center; flex-direction:column; padding:30px; box-sizing:border-box; }
+    #ruinsCard { background:linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,100,100,0.06); padding:30px; border-radius:18px; box-shadow:0 10px 40px rgba(0,0,0,0.7); text-align:center; max-width:780px; width:90%; }
+    .yin-button { width:120px; height:120px; border-radius:50%; background:radial-gradient(circle at 30% 30%, #fff 0%, #fff 40%, #000 40.1%, #000 100%); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 0 30px rgba(255,255,255,0.06); position:relative; margin-top:18px; }
+    .yin-button::after { content:''; position:absolute; width:60px; height:60px; border-radius:50%; background: radial-gradient(circle at 70% 70%, #000 0%, #000 40%, #fff 40.1%, #fff 100%); transform:translateY(-10px); }
+    .yin-pulse { animation:yinPulse 1.6s infinite; }
+    @keyframes yinPulse { 0% { box-shadow:0 0 0 0 rgba(255,255,255,0.08); transform:scale(0.98); } 50%{ box-shadow:0 0 40px 10px rgba(255,255,255,0.02); transform:scale(1.02); } 100%{ box-shadow:0 0 0 0 rgba(255,255,255,0.00); transform:scale(0.98); } }
+
+    /* Draw button aura (we update custom property via JS to grow aura up to 1000) */
+    #drawBtn { margin-top:12px; background:#000; color:#ff6666; border:2px solid #440000; padding:12px 25px; font-size:1.1em; cursor:pointer; transition:all 0.25s; position:relative; z-index:6; }
+    #drawBtn.pulse { animation:drawPulse 1.4s infinite; }
+    @keyframes drawPulse { 0%{ box-shadow: 0 0 0 0 rgba(255,102,102,0.06); } 50%{ box-shadow: 0 0 calc(var(--pulse-blur,18px)) calc(var(--pulse-spread,6px)) rgba(255,102,102,0.12); } 100%{ box-shadow: 0 0 0 0 rgba(255,102,102,0.06); } }
+
+    /* flip ripple */
+    .ripple { position:absolute; border-radius:50%; background:radial-gradient(circle, rgba(255,100,100,0.28) 0%, rgba(255,100,100,0.08) 30%, rgba(255,100,100,0.00) 70%); pointer-events:none; transform:translate(-50%,-50%) scale(0.1); opacity:0.95; z-index:50; transition:transform 800ms cubic-bezier(.2,.8,.2,1), opacity 800ms ease; }
 
     @keyframes wormhole-expand { 0%{width:10px;height:10px;opacity:0;}20%{opacity:0.8;}50%{width:200vmax;height:200vmax;opacity:0.9;}80%{opacity:0.8;}100%{width:10px;height:10px;opacity:0;} }
     @keyframes gate-enter { from { left: 100%; } to { left: 0; } }
     @keyframes glitch-bg { 0% { background-position:0 0; } 100% { background-position:40px 40px; } }
-    @keyframes vhs-distortion { 0%{transform:translateY(0);}20%{transform:translateY(-2px);}40%{transform:translateY(1px);}60%{transform:translateY(-1px);}80%{transform:translateY(2px);}100%{transform:translateY(0);} }
-    @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
     @keyframes glitch-text {
       0% { text-shadow: 0.05em 0 0 rgba(255,68,68,0.75), -0.05em -0.025em 0 rgba(255,160,160,0.5); }
-      15% { text-shadow: -0.05em -0.025em 0 rgba(255,68,68,0.75), 0.025em 0.025em 0 rgba(255,160,160,0.5); }
       50% { text-shadow: 0.025em 0.05em 0 rgba(255,68,68,0.75), 0 -0.05em 0 rgba(255,160,160,0.5); }
       100% { text-shadow: -0.025em 0 0 rgba(255,68,68,0.75), -0.025em -0.025em 0 rgba(255,160,160,0.5); }
     }
     @keyframes vhs-flicker { 0%,100%{opacity:1;}20%{opacity:0.95;}40%{opacity:0.85;}60%{opacity:0.95;}80%{opacity:0.9;} }
+    @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
 
-    button { margin-top:1em; background:#000; color:#ff6666; border:2px solid #440000; padding:12px 25px; font-size:1.1em; cursor:pointer; transition:all 0.3s; }
     button:hover { background:#ff6666; color:#000; text-shadow:0 0 5px #000; }
 
     @media (max-width:768px) {
@@ -182,6 +103,7 @@
       h1 { font-size:1.5em; }
       .audio-easter-egg { width:90%; right:5%; bottom:10px; }
       .album-player iframe { height:220px; }
+      .yin-button { width:90px; height:90px; }
     }
   </style>
 </head>
@@ -197,13 +119,14 @@
       <h1 class="flicker">THE MISSING GODORB</h1>
       <p style="text-align:center; color:#ff6666">Align three matching positions to awaken the gate</p>
       <div id="deck"></div>
-      <button id="drawBtn">DRAW CARDS</button>
+      <button id="drawBtn" class="pulse" style="--pulse-blur:18px; --pulse-spread:6px">DRAW CARDS</button>
       <div id="gameStatus" style="margin-top:1em;"></div>
+
       <div class="binary-glitch" id="binaryMessage" style="display:none;">
         <div class="binary-glitch-text">01010100 01101000 01100101 00100000 01001101 01101001 01110011 01110011 01101001 01101110 01100111 00100000 01010011 01110101 01101110 00100000 01001001 01101110 01100110 01100101 01110010 01101001 01101111 01110010 01101001 01110100 01111001</div>
         <div style="margin-top:10px;font-size:0.8em; color:#ff6666;">[The Missing Sun Inferiority]</div>
       </div>
-      
+
       <!-- Secret answer form for special combination -->
       <div class="secret-form" id="secretForm">
         <h3>ANCIENT KNOWLEDGE REQUIRED</h3>
@@ -250,6 +173,18 @@
     <div class="cinematic-text" id="cinematicText">WHERE DOES THE RABBIT HOLE GO?</div>
   </div>
 
+  <!-- RUINS PAGE (shown at draw 1000) -->
+  <div id="ruinsPage" style="display:flex;">
+    <div id="ruinsCard">
+      <h2 style="color:#ff6666">THE RUINS AWAKEN</h2>
+      <p style="color:#ddd; margin-top:6px;">The pattern has settled. Click the symbol to claim the Godorb.</p>
+      <div id="ruinsVisual" style="margin-top:18px;">
+        <div class="yin-button yin-pulse" id="yinBtn" title="Download godorb.pdf" aria-label="download godorb" role="button"></div>
+      </div>
+      <div style="margin-top:18px; font-size:0.9em; color:#aaa;">Click the symbol to download the Godorb (godorb.pdf)</div>
+    </div>
+  </div>
+
   <script>
     /******************************************************************
      * Constants and state
@@ -259,6 +194,7 @@
     let drawCount = 0;
     let audioShown = false;
     let isPausedForCinematic = false;
+    const MAX_AUTO_STOP = 1000;
 
     function onReady(fn) {
       if (document.readyState === 'complete' || document.readyState === 'interactive') {
@@ -269,7 +205,7 @@
     }
 
     /******************************************************************
-     * Matrix Rain (red letters) - adjusted so there's no red tint
+     * Matrix Rain (red letters)
      ******************************************************************/
     (function matrixRain() {
       const canvas = document.getElementById('matrixCanvas');
@@ -289,15 +225,13 @@
       window.addEventListener('resize', init);
       init();
 
-      const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZабвгдеёжзийклмнопрстуфхцчшщъыьэюяαβγδεζηθικλμνξοπρστυφχψωابتثجحخدذرزسشصضطظعغفقكلمنهويةאבגדהוזחטיכלמנסעפצקרשתअआइईउऊएऐओऔकखगघङचछजझञटठडढणतथदधनपफबभमययरלवशषसहあいうえおかきくけこさしすせそたちつてとなにぬねのアイウエオカキクケコサシスセソタチツテトナニヌネノ가나다라마바사아자차카타파하①②③④⑤⑥⑦⑧⑨01!@#$%^&*()[]{}<>?';
+      const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZабвгдеёжзийклмнопрстуфхцчшщъыьэюяαβγδεζηθικλμνξοπρστυφχψωабвאבגדהוזחטיכלמנסעपकखगघङचछजझञटठडढणतथदधनपफबभमययरलवशषसहあいうえおかきくけこさしすせそ';
       const chars = charset.split('');
 
       function draw() {
-        // Slight fade to create trailing effect
         ctx.fillStyle = 'rgba(0,0,0,0.12)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Red letters are pure and bright
         ctx.fillStyle = '#ff2b2b';
         ctx.shadowColor = '#ff2b2b';
         ctx.shadowBlur = 10;
@@ -321,17 +255,14 @@
     })();
 
     /******************************************************************
-     * Lightning engine: draws bolts on lightningCanvas
+     * Lightning engine
      ******************************************************************/
     (function LightningEngine() {
       const canvas = document.getElementById('lightningCanvas');
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
 
-      function resize() {
-        canvas.width = innerWidth;
-        canvas.height = innerHeight;
-      }
+      function resize() { canvas.width = innerWidth; canvas.height = innerHeight; }
       window.addEventListener('resize', resize);
       resize();
 
@@ -367,7 +298,6 @@
       function spawnBoltOnce() {
         const x = Math.random() * canvas.width;
         drawBolt(x, 0, canvas.height * (0.55 + Math.random()*0.3), { segments: 10 + Math.floor(Math.random()*8), maxOffset: 80, thickness: 2 + Math.random()*2 });
-        // quick fade after a while to clear
         setTimeout(() => {
           ctx.fillStyle = 'rgba(0,0,0,0.35)';
           ctx.fillRect(0,0,canvas.width,canvas.height);
@@ -376,7 +306,7 @@
 
       window.Lightning = {
         spawnBoltOnce,
-        spawnSequence: function(count = 6, pace = 300) {
+        spawnSequence: function(count = 6, pace = 200) {
           let i = 0;
           const t = setInterval(() => {
             spawnBoltOnce();
@@ -389,14 +319,12 @@
     })();
 
     /******************************************************************
-     * WebAudio: deep rumble + jolt (synthesized). No external files.
+     * WebAudio: deep rumble + jolt (synthesized)
      ******************************************************************/
     const AudioEngine = (function(){
       let audioCtx = null;
       function ensureCtx() {
-        if (!audioCtx) {
-          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         return audioCtx;
       }
 
@@ -406,13 +334,10 @@
           const now = ctx.currentTime;
           const duration = durationMs / 1000;
 
-          // noise burst (lowpass)
           const bufferSize = ctx.sampleRate * Math.min(1.5, duration);
           const buffer = ctx.createBuffer(1, bufferSize | 0, ctx.sampleRate);
           const data = buffer.getChannelData(0);
-          for (let i = 0; i < bufferSize; i++) {
-            data[i] = (Math.random()*2 - 1) * (1 - i / bufferSize) * 0.6;
-          }
+          for (let i = 0; i < bufferSize; i++) data[i] = (Math.random()*2 - 1) * (1 - i / bufferSize) * 0.6;
           const noiseSrc = ctx.createBufferSource();
           noiseSrc.buffer = buffer;
 
@@ -425,7 +350,6 @@
           noiseGain.gain.linearRampToValueAtTime(0.5, now + 0.12);
           noiseGain.gain.linearRampToValueAtTime(0.0, now + duration);
 
-          // sine oscillator for sub-bass
           const osc = ctx.createOscillator();
           osc.type = 'sine';
           osc.frequency.setValueAtTime(40, now);
@@ -436,19 +360,12 @@
           oscGain.gain.linearRampToValueAtTime(0.9, now + 0.15);
           oscGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
 
-          noiseSrc.connect(noiseFilter);
-          noiseFilter.connect(noiseGain);
-          noiseGain.connect(ctx.destination);
-          osc.connect(oscGain);
-          oscGain.connect(ctx.destination);
+          noiseSrc.connect(noiseFilter); noiseFilter.connect(noiseGain); noiseGain.connect(ctx.destination);
+          osc.connect(oscGain); oscGain.connect(ctx.destination);
 
-          noiseSrc.start(now);
-          osc.start(now);
-          noiseSrc.stop(now + duration);
-          osc.stop(now + duration + 0.02);
-        } catch(err) {
-          console.warn('AudioEngine deepRumble error', err);
-        }
+          noiseSrc.start(now); osc.start(now);
+          noiseSrc.stop(now + duration); osc.stop(now + duration + 0.02);
+        } catch(err) { console.warn('AudioEngine deepRumble error', err); }
       }
 
       function jolt(durationMs = 350) {
@@ -475,34 +392,40 @@
 
           osc.start(now);
           osc.stop(now + durationMs/1000 + 0.02);
-        } catch(err) {
-          console.warn('AudioEngine jolt error', err);
-        }
+        } catch(err) { console.warn('AudioEngine jolt error', err); }
       }
 
       return { deepRumble, jolt };
     })();
 
     /******************************************************************
-     * Cinematic orchestration: play sounds, lightning, pixel overlay
+     * Cinematic orchestration
      ******************************************************************/
     function flashLightningForDraw(drawNumber) {
       const pixel = document.getElementById('pixelOverlay');
       if (!pixel) return;
-      if (drawNumber === 3) {
+      // If draw <= 33, spawn lightning each draw (growing intensity up to 33)
+      if (drawNumber <= 33) {
         if (window.Lightning) Lightning.spawnBoltOnce();
-        AudioEngine.jolt(450);
+        AudioEngine.jolt(180 + Math.min(300, drawNumber * 8));
         pixel.classList.add('active');
-        setTimeout(() => pixel.classList.remove('active'), 220);
-      } else if (drawNumber === 19) {
-        if (window.Lightning) window.Lightning.spawnSequence(8, 320);
-        AudioEngine.deepRumble(3000);
-        pixel.classList.add('active');
-        setTimeout(() => pixel.classList.remove('active'), 3200);
-      } else {
-        AudioEngine.jolt(300);
-        if (window.Lightning) Lightning.spawnBoltOnce();
+        setTimeout(() => pixel.classList.remove('active'), 200 + (drawNumber/33)*400);
       }
+      // At exactly 33: heavy lightning + thunder + mind shatter
+      if (drawNumber === 33) {
+        if (window.Lightning) window.Lightning.spawnSequence(10, 160);
+        AudioEngine.deepRumble(3500);
+        setTimeout(() => AudioEngine.jolt(700), 400);
+        showMindShatters();
+      }
+    }
+
+    function showMindShatters() {
+      const overlay = document.getElementById('cinematicOverlay');
+      const text = document.getElementById('cinematicText');
+      text.textContent = "MIND SHATTERS";
+      overlay.classList.add('show');
+      setTimeout(() => overlay.classList.remove('show'), 2200);
     }
 
     async function showCinematicThen(drawNumber = 3, callback) {
@@ -512,16 +435,11 @@
       drawBtn.disabled = true;
       drawBtn.style.opacity = '0.5';
       const overlay = document.getElementById('cinematicOverlay');
-      
-      // Change text for 19th draw
-      if (drawNumber === 19) {
-        document.getElementById('cinematicText').textContent = "ONLY ONE WAY TO KNOW";
-      } else {
-        document.getElementById('cinematicText').textContent = "WHERE DOES THE RABBIT HOLE GO?";
-      }
-      
-      overlay.classList.add('show');
 
+      if (drawNumber === 19) document.getElementById('cinematicText').textContent = "ONLY ONE WAY TO KNOW";
+      else document.getElementById('cinematicText').textContent = "WHERE DOES THE RABBIT HOLE GO?";
+
+      overlay.classList.add('show');
       setTimeout(() => { flashLightningForDraw(drawNumber); }, 60);
 
       if (drawNumber === 3) {
@@ -532,7 +450,6 @@
         await new Promise(r => setTimeout(r, 1600));
       }
 
-      // quick pixel effect
       document.getElementById('pixelOverlay').classList.add('active');
       setTimeout(() => document.getElementById('pixelOverlay').classList.remove('active'), 280);
 
@@ -544,12 +461,11 @@
     }
 
     /******************************************************************
-     * UI: audio player persistent (only one) - uses iframe on trigger
+     * Audio player
      ******************************************************************/
     function showAudioPlayerPersist() {
       if (audioShown) return;
       audioShown = true;
-      // Keep a single floating player region. You can replace iframe with your own embed.
       const iframeHTML = `<iframe src="https://audius.co/embed/album/ZpVqWAy?flavor=card" width="100%" height="280" allow="encrypted-media" style="border: none;"></iframe>`;
       const floating = document.getElementById('floatingAlbum');
       if (floating) {
@@ -597,12 +513,27 @@
       ]
     };
 
-    function resolvePos(item) {
-      return (typeof item.pos === 'function') ? item.pos() : item.pos;
+    function resolvePos(item) { return (typeof item.pos === 'function') ? item.pos() : item.pos; }
+
+    // Button pulse aura scaler (grow towards 1000)
+    function updateDrawButtonAura() {
+      const btn = document.getElementById('drawBtn');
+      const pct = Math.min(1, drawCount / MAX_AUTO_STOP);
+      // pulse spread and blur scale with progress
+      const blur = 12 + Math.floor(pct * 36);        // 12..48
+      const spread = 4 + Math.floor(pct * 18);       // 4..22
+      btn.style.setProperty('--pulse-blur', blur + 'px');
+      btn.style.setProperty('--pulse-spread', spread + 'px');
+      // slow down animation slightly as it gets closer
+      const speed = 1.6 - pct * 0.9;
+      btn.style.animationDuration = (speed > 0.55 ? speed : 0.55) + 's';
     }
 
+    // click handler
     document.getElementById('drawBtn').addEventListener('click', () => {
       if (isPausedForCinematic) return;
+      // prevent clicking after ruin page opened
+      if (document.getElementById('ruinsPage').style.display === 'flex') return;
       const nextDraw = drawCount + 1;
       if (nextDraw === 3 || nextDraw === 19) {
         showCinematicThen(nextDraw, () => doDraw());
@@ -611,7 +542,10 @@
       }
     });
 
-    function doDraw() {
+    function doDraw(forceSpecialAt1000=false) {
+      // if already at ruins, stop
+      if (document.getElementById('ruinsPage').style.display === 'flex') return;
+
       const deck = document.getElementById('deck');
       deck.innerHTML = '';
       currentCards = [];
@@ -619,10 +553,67 @@
       document.getElementById('binaryMessage').style.display = 'none';
       document.getElementById('pixelOverlay').classList.remove('active');
       document.getElementById('secretForm').style.display = 'none';
+
       drawCount++;
       document.getElementById('drawCounter').textContent = `DRAWS: ${drawCount}`;
-      console.log(`Draw #${drawCount}`);
+      updateDrawButtonAura();
 
+      // Lightning behavior: spawn each draw up to 33
+      flashLightningForDraw(drawCount);
+
+      // At draw 1000: force special (Frog + Borinquenuela + Madness) and open ruins
+      if (drawCount >= MAX_AUTO_STOP || forceSpecialAt1000) {
+        // ensure cards are the special ones
+        const bug = symbols.bugs.find(c => c.name === "Dragonfly") || symbols.bugs[0];
+        // We specifically need Frog, Borinquenuela, Madness
+        const frog = symbols.animals.find(c => c.name === "Frog") || symbols.animals[4];
+        const borinquenuela = symbols.bugs.find(c => c.name === "Borinquenuela") || symbols.bugs[4];
+        const madness = symbols.emotions.find(c => c.name === "Madness") || symbols.emotions[7];
+
+        const cbug = { ...borinquenuela, pos: 0, type: 'bug', revealed: false };
+        const canimal = { ...frog, pos: 0, type: 'animal', revealed: false };
+        const cemotion = { ...madness, pos: 0, type: 'emotion', revealed: false };
+        currentCards = [cbug, canimal, cemotion];
+
+        // render cards quickly and flip them
+        currentCards.forEach((card, index) => {
+          const cardEl = document.createElement('div');
+          cardEl.className = 'card';
+          cardEl.innerHTML = `
+            <div class="card-inner">
+              <div class="card-face card-front">
+                <div style="font-size:3em;">${card.emoji}</div>
+                <div style="font-size:0.8em; margin-top:10px; color:#ddd;">${card.name}</div>
+              </div>
+              <div class="card-face card-back">
+                <div style="font-size:2em;">${card.emoji}</div>
+                <div>${card.name}</div>
+                <div style="font-size:0.7em; margin-top:10px; color:#ccc;">${card.desc}</div>
+                <div style="margin-top:15px;font-size:0.6em; color:#999;">Pos: ${card.pos}</div>
+              </div>
+            </div>
+          `;
+          deck.appendChild(cardEl);
+          // small delay per card to create reveal choreography
+          setTimeout(() => flipCard(cardEl, index), 250 * (index + 1));
+        });
+
+        // after a brief cinematic, open ruins
+        setTimeout(() => {
+          // big cinematic
+          document.getElementById('cinematicText').textContent = "THE RUINS AWAKEN";
+          document.getElementById('cinematicOverlay').classList.add('show');
+          if (window.Lightning) window.Lightning.spawnSequence(12, 120);
+          AudioEngine.deepRumble(3800);
+          setTimeout(() => document.getElementById('cinematicOverlay').classList.remove('show'), 2600);
+        }, 1200);
+
+        // finalize: replace game with ruins page
+        setTimeout(() => openRuinsPage(), 3000);
+        return;
+      }
+
+      // Normal draw: choose randoms (but set special event for 3rd draw)
       let bug, animal, emotion;
       if (drawCount === 3) {
         bug = symbols.bugs.find(c => c.name === "Dragonfly") || symbols.bugs[0];
@@ -639,6 +630,7 @@
       const cemotion = { ...emotion, pos: resolvePos(emotion), type: 'emotion', revealed: false };
       currentCards = [cbug, canimal, cemotion];
 
+      // render cards
       currentCards.forEach((card, index) => {
         const cardEl = document.createElement('div');
         cardEl.className = 'card';
@@ -660,23 +652,42 @@
         deck.appendChild(cardEl);
       });
 
+      // auto-flip on draw #3 for effect & show music
       if (drawCount === 3) {
         setTimeout(() => {
           const cards = document.querySelectorAll('.card');
           cards.forEach((card, idx) => {
             setTimeout(() => flipCard(card, idx), 500 * (idx + 1));
           });
-        }, 900);
+        }, 800);
         setTimeout(showAudioPlayerPersist, 1000);
       }
     }
 
+    // ripple + flip
     function flipCard(cardEl, index) {
       if (!cardEl.classList.contains('flipped')) {
+        // create ripple centered on card
+        const r = document.createElement('div');
+        r.className = 'ripple';
+        cardEl.appendChild(r);
+        const rect = cardEl.getBoundingClientRect();
+        const cx = rect.width/2;
+        const cy = rect.height/2;
+        r.style.left = cx + 'px';
+        r.style.top = cy + 'px';
+        // force reflow then animate
+        requestAnimationFrame(() => {
+          r.style.transform = 'translate(-50%,-50%) scale(12)';
+          r.style.opacity = '0';
+        });
+        setTimeout(() => r.remove(), 900);
+
         cardEl.classList.add('flipped');
         currentCards[index].revealed = true;
-        setTimeout(() => cardEl.classList.remove('vhs-effect'), 300);
-        checkAlignment();
+        // sound + subtle jolt
+        AudioEngine.jolt(220);
+        setTimeout(() => checkAlignment(), 420);
       }
     }
 
@@ -689,23 +700,22 @@
         const hasDragonfly = currentCards.some(c => c.name === "Dragonfly");
         const hasResonance = currentCards.some(c => c.name === "Resonance");
         const isEasterEgg = (hasBat && hasDragonfly && hasResonance && allSame && positions[0] === 0);
-        
-        // Check for the special combination (Frog, Borinquenuela, Madness)
+
+        // special combo
         const hasFrog = currentCards.some(c => c.name === "Frog");
         const hasBorinquenuela = currentCards.some(c => c.name === "Borinquenuela");
         const hasMadness = currentCards.some(c => c.name === "Madness");
         const isSpecialCombination = hasFrog && hasBorinquenuela && hasMadness && allSame;
-        
+
         if (allSame) {
           if (isSpecialCombination) {
-            // Show the secret form instead of the shadow gate
             document.getElementById('secretForm').style.display = 'block';
             document.getElementById('gameStatus').innerHTML = `<span style="color:#ff6666">ANCIENT PATTERN DETECTED</span><br><span style="font-size:0.8em">Answer the riddles to unlock the ruins...</span>`;
           } else if (isEasterEgg) {
             document.getElementById('audioEasterEgg').classList.add('show');
             document.getElementById('binaryMessage').style.display = 'block';
             document.getElementById('pixelOverlay').classList.add('active');
-            document.getElementById('gameStatus').innerHTML = `<span style="color:#ff6666">COSMIC ALIGNMENT ACHIEVED</span><br><span style="font-size:0.8em">The hidden frequencies are revealed...</span><br><span style="font-size:0.7em;color:#888">Probability: ~5.26% (1 in 19)</span>`;
+            document.getElementById('gameStatus').innerHTML = `<span style="color:#ff6666">COSMIC ALIGNMENT ACHIEVED</span><br><span style="font-size:0.8em">The hidden frequencies are revealed...</span>`;
             setTimeout(activateWormhole, 2000);
           } else {
             document.getElementById('gameStatus').innerHTML = '<span style="color:#ff6666">ALIGNMENT DETECTED</span><br><span style="font-size:0.8em">Gateway coordinates confirmed...</span>';
@@ -724,10 +734,7 @@
       messageLog.unshift('> Gateway established. Transmission begins:');
       document.getElementById('messageLog').innerHTML = messageLog.join('<br>');
       wormhole.style.animation = 'wormhole-expand 3.5s forwards';
-
-      // only blur UI but do not darken — keep background bright so red letters show clearly
       game.style.filter = 'blur(6px)';
-
       setTimeout(() => {
         document.getElementById('shadowGate').style.animation = 'gate-enter 2s forwards';
         game.style.display = 'none';
@@ -776,65 +783,78 @@
     }
 
     /******************************************************************
-     * Secret answer checking for special combination
+     * Secret answer checking
      ******************************************************************/
     function checkAncientAnswers() {
       const frogAnswer = document.getElementById('frogAnswer').value.trim().toLowerCase();
       const borinquenuelaAnswer = document.getElementById('borinquenuelaAnswer').value.trim().toLowerCase();
       const madnessAnswer = document.getElementById('madnessAnswer').value.trim().toLowerCase();
       const status = document.getElementById('answerStatus');
-      
-      // Check if answers are correct (you can customize these)
+
       const correctFrog = frogAnswer.includes('frog') || frogAnswer.includes('amphibian') || frogAnswer.includes('croak');
       const correctBorinquenuela = borinquenuelaAnswer.includes('root') || borinquenuelaAnswer.includes('plant') || borinquenuelaAnswer.includes('earth');
       const correctMadness = madnessAnswer.includes('dance') || madnessAnswer.includes('chaos') || madnessAnswer.includes('edge');
-      
+
       if (correctFrog && correctBorinquenuela && correctMadness) {
         status.innerHTML = '<span style="color:#0f0">✅ ANSWERS ACCEPTED! THE RUINS ARE OPENING...</span>';
-        // Trigger cinematic effect
         showCinematicThen(19, () => {
-          // Create a download link for the secret PDF
+          // Offer ephemeral download of the ruins PDF
           const link = document.createElement('a');
-          link.href = 'ancient_ruins.pdf'; // Replace with your actual PDF file path
+          link.href = 'ancient_ruins.pdf';
           link.download = 'ancient_ruins_secrets.pdf';
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
-          
           status.innerHTML = '<span style="color:#0f0">✅ SECRETS DOWNLOADED! THE ANCIENT RUINS ARE YOURS TO EXPLORE.</span>';
         });
       } else {
         status.innerHTML = '<span style="color:#ff6666">❌ ANSWERS REJECTED! THE RUINS REMAIN SEALED.</span>';
-        // Add some visual feedback for wrong answers
         document.getElementById('pixelOverlay').classList.add('active');
         setTimeout(() => document.getElementById('pixelOverlay').classList.remove('active'), 500);
-        
         if (window.Lightning) Lightning.spawnBoltOnce();
         AudioEngine.jolt(300);
       }
     }
 
-    // expose for inline onclick handlers (already used in markup)
+    // RUINS: show page and enable yin download
+    function openRuinsPage() {
+      // hide game
+      document.getElementById('godorbGame').style.display = 'none';
+      document.getElementById('shadowGate').style.display = 'none';
+      // show ruins
+      const rp = document.getElementById('ruinsPage');
+      rp.style.display = 'flex';
+      // add click to yin button to download godorb.pdf
+      const yin = document.getElementById('yinBtn');
+      yin.addEventListener('click', () => {
+        // small "settle" animation + sound
+        AudioEngine.jolt(600);
+        const link = document.createElement('a');
+        link.href = 'godorb.pdf';
+        link.download = 'godorb.pdf';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      });
+    }
+
+    // expose for inline onclick handlers
     window.sendMessage = sendMessage;
     window.returnToGame = returnToGame;
     window.checkAncientAnswers = checkAncientAnswers;
 
     /******************************************************************
-     * Init after DOM ready
+     * Init
      ******************************************************************/
     onReady(() => {
+      // hide ruins initially (display: none already)
+      document.getElementById('ruinsPage').style.display = 'none';
+      // initial draw
       doDraw();
+      // allow user to keep clicking; also allow auto-draw by holding draw? (not implemented)
+      // keep draw button aura live
+      updateDrawButtonAura();
     });
   </script>
 </body>
 </html>
-
- 
-    
-
-    
-  
-
-
-  
-    
